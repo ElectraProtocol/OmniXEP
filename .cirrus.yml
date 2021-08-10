@@ -83,13 +83,6 @@ task:
   env:
     FILE_ENV: "./ci/test/00_setup_env_win64.sh"
 
-task:
-  name: '[previous releases, uses qt5 dev package and some depends packages] [unsigned char] [bionic]'
-  << : *GLOBAL_TASK_TEMPLATE
-  container:
-    image: ubuntu:bionic
-  env:
-    FILE_ENV: "./ci/test/00_setup_env_native_qt5.sh"
 
 task:
   name: '[no depends, only system libx, sanitizers: thread (TSan), no wallet] [xenial]'
@@ -125,4 +118,3 @@ task:
     image: ubuntu:bionic
   env:
     FILE_ENV: "./ci/test/00_setup_env_native_omnij.sh"
-
