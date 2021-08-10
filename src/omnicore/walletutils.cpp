@@ -224,8 +224,9 @@ int64_t SelectCoins(interfaces::Wallet& iWallet, const std::string& fromAddress,
 
         if (status->second.depth_in_main_chain == 0) {
             LOCK(mempool.cs);
-            if (!mempool.exists(txid))
+            if (!mempool.exists(txid)) {
                 continue;
+            }
         }
 
         if (!it->available_credit) {
@@ -256,8 +257,6 @@ int64_t SelectCoins(interfaces::Wallet& iWallet, const std::string& fromAddress,
             }
 
             std::string sAddress = EncodeDestination(dest);
-            if (msc_debug_tokens)
-                PrintToLog("%s: sender: %s, outpoint: %s:%d, value: %d\n", __func__, sAddress, txid.GetHex(), n, txOut.nValue);
 
             // only use funds from the sender's address
             if (fromAddress == sAddress) {
@@ -266,11 +265,19 @@ int64_t SelectCoins(interfaces::Wallet& iWallet, const std::string& fromAddress,
 
                 nTotal += txOut.nValue;
 
-                if (amountRequired <= nTotal) break;
+                if (msc_debug_tokens) {
+                    PrintToLog("%s: selecting sender: %s, outpoint: %s:%d, value: %d\n", __func__, sAddress, txid.GetHex(), n, txOut.nValue);
+                }
+
+                if (amountRequired <= nTotal) {
+                    break;
+                }
             }
         }
 
-        if (amountRequired <= nTotal) break;
+        if (amountRequired <= nTotal) {
+            break;
+        }
     }
 
     return nTotal;

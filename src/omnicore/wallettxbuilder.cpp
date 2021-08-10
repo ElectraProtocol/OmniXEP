@@ -105,6 +105,10 @@ int WalletTxBuilder(
     CAmount nFeeRet{0};
     bool createTX{true};
 
+    if (outputAmount + nFeeRequired == 0) {
+        outputAmount = 1;
+    }
+
     while (createTX) {
         // Select the inputs
         auto selected = mastercore::SelectCoins(*iWallet, senderAddress, coinControl, outputAmount + nFeeRequired);
