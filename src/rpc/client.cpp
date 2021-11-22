@@ -228,6 +228,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "omni_sendsto", 1, "propertyid" },
     { "omni_sendsto", 4, "distributionproperty" },
     { "omni_sendall", 2, "ecosystem" },
+    { "omni_sendtomany", 1, "propertyid" },
+    { "omni_sendtomany", 2, "mapping" },
     { "omni_sendtrade", 1, "propertyidforsale" },
     { "omni_sendtrade", 3, "propertiddesired" },
     { "omni_sendcanceltradesbyprice", 1, "propertyidforsale" },
@@ -296,6 +298,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     /* Omni Core - payload creation */
     { "omni_createpayload_simplesend", 0, "propertyid" },
     { "omni_createpayload_sendall", 0, "ecosystem" },
+    { "omni_createpayload_sendtomany", 0, "propertyid" },
+    { "omni_createpayload_sendtomany", 1, "mapping" },
     { "omni_createpayload_dexsell", 0, "propertyidforsale" },
     { "omni_createpayload_dexsell", 3, "paymentwindow" },
     { "omni_createpayload_dexsell", 5, "action" },

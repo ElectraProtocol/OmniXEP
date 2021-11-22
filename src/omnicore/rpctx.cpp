@@ -475,6 +475,127 @@ static UniValue omni_setnonfungibledata(const JSONRPCRequest& request)
     }
 }
 
+static UniValue omni_sendtomany(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    std::unique_ptr<interfaces::Wallet> pwallet = interfaces::MakeWallet(wallet);
+
+    RPCHelpMan{"omni_sendtomany",
+       "\nCreate and broadcast a send-to-many transaction, which allows to transfer tokens from one source to multiple receivers.\n",
+       {
+           {"fromaddress", RPCArg::Type::STR, RPCArg::Optional::NO, "the address to send from"},
+           {"propertyid", RPCArg::Type::NUM, RPCArg::Optional::NO, "the identifier of the tokens to send"},
+           {"mapping", RPCArg::Type::ARR, RPCArg::Optional::NO, "an array with the receiving address \"address\" and the \"amount\" to send",
+                {
+                    {"", RPCArg::Type::OBJ, RPCArg::Optional::OMITTED, "",
+                        {
+                            {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "the address of the receiver"},
+                            {"amount", RPCArg::Type::STR, RPCArg::Optional::NO, "the amount of tokens to send to this output"},
+                        },
+                    },
+                },
+            },
+       },
+       RPCResult{
+           RPCResult::Type::STR_HEX, "hash", "the hex-encoded transaction hash"
+       },
+       RPCExamples{
+           HelpExampleCli("omni_sendtomany", "\"3M9qvHKtgARhqcMtM5cRT9VaiDJ5PSfQGY\" 1 '[{\"address\": \"37FaKponF7zqoMLUjEiko25pDiuVH5YLEa\", \"amount\": \"10.5\"}, {\"output\": \"1oQM6A7ZHpuuMZwJvTsLumUrut2GnFCok\", \"amount\": \"0.5\"}]'")
+           + HelpExampleRpc("omni_sendtomany", "\"3M9qvHKtgARhqcMtM5cRT9VaiDJ5PSfQGY\", 1, '[{\"address\": \"37FaKponF7zqoMLUjEiko25pDiuVH5YLEa\", \"amount\": \"10.5\"}, {\"output\": \"1oQM6A7ZHpuuMZwJvTsLumUrut2GnFCok\", \"amount\": \"0.5\"}]'")
+       }
+    }.Check(request);
+
+    std::string fromAddress = ParseAddress(request.params[0]);
+    uint32_t propertyId = ParsePropertyId(request.params[1]);
+
+    RequireBoundedStmReceiverNumber(request.params[2].size());
+
+    // ---
+    // dry run to get positions for send-to-many outputs
+    // ---
+
+    std::vector<std::string> receiverAddresses;
+    std::vector<std::tuple<uint8_t, uint64_t>> outputValues;
+
+    uint64_t amountToSend = 0;
+    uint8_t output = 1; // dummy position
+
+    for (unsigned int idx = 0; idx < request.params[2].size(); idx++) {
+        const UniValue& input = request.params[2][idx];
+        const UniValue& o = input.get_obj();
+
+        const UniValue& uvOutput = find_value(o, "address");
+        const UniValue& uvAmount = find_value(o, "amount");
+
+        std::string address = ParseAddress(uvOutput);
+        uint64_t amount = ParseAmount(uvAmount, isPropertyDivisible(propertyId));
+
+        amountToSend += amount;
+        receiverAddresses.push_back(address);
+        outputValues.push_back(std::make_tuple(output, amount));
+
+        output += 1;
+    }
+
+    std::vector<unsigned char> testPayload = CreatePayload_SendToMany(
+        propertyId,
+        outputValues);
+
+    int outputCount = GetDryPayloadOutputCount(fromAddress, "", testPayload, pwallet.get());
+
+    // perform checks
+    RequireExistingProperty(propertyId);
+    RequireBalance(fromAddress, propertyId, amountToSend);
+
+    if (outputCount < 0) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Error creating send-to-many payload");
+    }
+
+    // ---
+    // actual run
+    // --
+
+    receiverAddresses.clear();
+    outputValues.clear();
+    output = outputCount;
+
+    for (unsigned int idx = 0; idx < request.params[2].size(); idx++) {
+        const UniValue& input = request.params[2][idx];
+        const UniValue& o = input.get_obj();
+
+        const UniValue& uvOutput = find_value(o, "address");
+        const UniValue& uvAmount = find_value(o, "amount");
+
+        std::string address = ParseAddress(uvOutput);
+        uint64_t amount = ParseAmount(uvAmount, isPropertyDivisible(propertyId));
+
+        receiverAddresses.push_back(address);
+        outputValues.push_back(std::make_tuple(output, amount));
+
+        output += 1;
+    }
+
+    std::vector<unsigned char> payload = CreatePayload_SendToMany(
+        propertyId,
+        outputValues);
+
+    // request the wallet build the transaction (and if needed commit it)
+    uint256 txid;
+    std::string rawHex;
+    int result = WalletTxBuilder(fromAddress, receiverAddresses, "", 0, payload, txid, rawHex, autoCommit, pwallet.get());
+
+    // check error and return the txid (or raw hex depending on autocommit)
+    if (result != 0) {
+        throw JSONRPCError(result, error_str(result));
+    } else {
+        if (!autoCommit) {
+            return rawHex;
+        } else {
+            PendingAdd(txid, fromAddress, MSC_TYPE_SEND_TO_MANY, propertyId, amountToSend);
+            return txid.GetHex();
+        }
+    }
+}
 
 static UniValue omni_senddexsell(const JSONRPCRequest& request)
 {
@@ -2179,6 +2300,7 @@ static const CRPCCommand commands[] =
     { "omni layer (transaction creation)", "omni_send",                    &omni_send,                    {"fromaddress", "toaddress", "propertyid", "amount", "redeemaddress", "referenceamount"} },
     { "omni layer (transaction creation)", "omni_sendxeppayment",          &omni_sendxeppayment,          {"fromaddress", "toaddress", "linkedTxID", "amount"} },
     { "omni layer (transaction creation)", "omni_senddexsell",             &omni_senddexsell,             {"fromaddress", "propertyidforsale", "amountforsale", "amountdesired", "paymentwindow", "minacceptfee", "action"} },
+    { "omni layer (transaction creation)", "omni_sendtomany",              &omni_sendtomany,              {"fromaddress", "propertyid", "mapping"} },
     { "omni layer (transaction creation)", "omni_sendnewdexorder",         &omni_sendnewdexorder,         {"fromaddress", "propertyidforsale", "amountforsale", "amountdesired", "paymentwindow", "minacceptfee"} },
     { "omni layer (transaction creation)", "omni_sendupdatedexorder",      &omni_sendupdatedexorder,      {"fromaddress", "propertyidforsale", "amountforsale", "amountdesired", "paymentwindow", "minacceptfee"} },
     { "omni layer (transaction creation)", "omni_sendcanceldexorder",      &omni_sendcanceldexorder,      {"fromaddress", "propertyidforsale"} },

@@ -38,6 +38,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <tuple>
 
 // Namespaces
 using namespace mastercore;
@@ -193,6 +194,9 @@ void populateRPCTypeInfo(CMPTransaction& mp_obj, UniValue& txobj, uint32_t txTyp
         case MSC_TYPE_SEND_ALL:
             populateRPCTypeSendAll(mp_obj, txobj, confirmations);
             break;
+        case MSC_TYPE_SEND_TO_MANY:
+            populateRPCTypeSendToMany(mp_obj, txobj);
+            break;
         case MSC_TYPE_TRADE_OFFER:
             populateRPCTypeTradeOffer(mp_obj, txobj);
             break;
@@ -274,6 +278,7 @@ bool showRefForTx(uint32_t txType)
 {
     switch (txType) {
         case MSC_TYPE_SIMPLE_SEND: return true;
+        case MSC_TYPE_SEND_TO_MANY: return false;
         case MSC_TYPE_SEND_TO_OWNERS: return false;
         case MSC_TYPE_TRADE_OFFER: return false;
         case MSC_TYPE_METADEX_TRADE: return false;
@@ -331,6 +336,35 @@ void populateRPCTypeSimpleSend(CMPTransaction& omniObj, UniValue& txobj)
         txobj.pushKV("divisible", isPropertyDivisible(propertyId));
         txobj.pushKV("amount", FormatMP(propertyId, omniObj.getAmount()));
     }
+}
+
+
+void populateRPCTypeSendToMany(CMPTransaction& omniObj, UniValue& txobj)
+{
+    uint32_t propertyId = omniObj.getProperty();
+    txobj.pushKV("propertyid", (uint64_t) propertyId);
+    txobj.pushKV("divisible", isPropertyDivisible(propertyId));
+
+    UniValue outputValues(UniValue::VARR);
+
+    for (const std::tuple<uint8_t, uint64_t>& entry : omniObj.getStmOutputValues()) {
+        
+        uint8_t output = std::get<0>(entry);
+        std::string amount = FormatMP(propertyId, std::get<1>(entry));
+        std::string destination;
+        bool valid = omniObj.getValidStmAddressAt(output, destination);
+
+        if (valid) {
+            UniValue outputEntry(UniValue::VOBJ);
+            outputEntry.pushKV("output", output);
+            outputEntry.pushKV("address", destination);
+            outputEntry.pushKV("amount", amount);
+            outputValues.push_back(outputEntry);
+        }
+    }
+
+    txobj.pushKV("receivers", outputValues);
+    txobj.pushKV("totalamount", FormatMP(propertyId, omniObj.getAmount()));
 }
 
 void populateRPCTypeSendToOwners(CMPTransaction& omniObj, UniValue& txobj, bool extendedDetails, std::string extendedDetailsFilter, interfaces::Wallet *iWallet)

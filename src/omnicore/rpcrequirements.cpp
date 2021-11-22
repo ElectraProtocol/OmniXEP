@@ -15,6 +15,7 @@
 #include <tinyformat.h>
 
 #include <stdint.h>
+#include <limits>
 #include <string>
 
 void RequireBalance(const std::string& address, uint32_t propertyId, int64_t amount)
@@ -261,5 +262,12 @@ void RequireNonFungibleTokenOwner(const std::string& address, uint32_t propertyI
     bool contiguous = mastercore::pDbNFT->IsRangeContiguous(propertyId, tokenStart, tokenEnd);
     if (rangeStartOwner != address || rangeEndOwner != address || !contiguous) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Sender does not own the range");
+    }
+}
+
+void RequireBoundedStmReceiverNumber(size_t numberOfReceivers)
+{
+    if (numberOfReceivers > std::numeric_limits<uint8_t>::max()) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Too many send-to-many receivers");
     }
 }

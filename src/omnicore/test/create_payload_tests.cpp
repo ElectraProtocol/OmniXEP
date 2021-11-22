@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <vector>
 #include <string>
+#include <tuple>
 
 BOOST_FIXTURE_TEST_SUITE(omnicore_create_payload_tests, BasicTestingSetup)
 
@@ -50,6 +51,41 @@ BOOST_AUTO_TEST_CASE(payload_send_all)
         static_cast<uint8_t>(2));          // ecosystem: Test
 
     BOOST_CHECK_EQUAL(HexStr(vch), "0000000402");
+}
+
+BOOST_AUTO_TEST_CASE(payload_send_to_many_1)
+{
+    uint32_t propertyId = 1;
+    std::vector<std::tuple<uint8_t, uint64_t>> outputValues;
+
+    outputValues.push_back(std::make_tuple(static_cast<uint8_t>(1), static_cast<uint64_t>(100000000)));
+
+    // Send to many [type 7, version 0]
+    std::vector<unsigned char> vch = CreatePayload_SendToMany(
+        propertyId,                      // property: 31
+        outputValues);                   // outputs: see list above
+
+    BOOST_CHECK_EQUAL(HexStr(vch),
+        "000000070000000101010000000005f5e100");
+}
+
+
+BOOST_AUTO_TEST_CASE(payload_send_to_many_2)
+{
+    uint32_t propertyId = 31;
+    std::vector<std::tuple<uint8_t, uint64_t>> outputValues;
+
+    outputValues.push_back(std::make_tuple(static_cast<uint8_t>(1), static_cast<uint64_t>(2000000000)));
+    outputValues.push_back(std::make_tuple(static_cast<uint8_t>(2), static_cast<uint64_t>(1500000000)));
+    outputValues.push_back(std::make_tuple(static_cast<uint8_t>(4), static_cast<uint64_t>(3000000000)));
+
+    // Send to many [type 7, version 0]
+    std::vector<unsigned char> vch = CreatePayload_SendToMany(
+        propertyId,                      // property: 31
+        outputValues);                   // outputs: see list above
+
+    BOOST_CHECK_EQUAL(HexStr(vch),
+        "000000070000001f03010000000077359400020000000059682f000400000000b2d05e00");
 }
 
 BOOST_AUTO_TEST_CASE(payload_dex_offer)

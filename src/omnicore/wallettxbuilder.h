@@ -17,6 +17,7 @@ class Wallet;
 
 #include <stdint.h>
 #include <string>
+#include <tuple>
 #include <vector>
 
 /**
@@ -32,7 +33,31 @@ int WalletTxBuilder(
         std::string& retRawTx,
         bool commit,
         interfaces::Wallet* iWallet = nullptr,
-        CAmount min_fee = 0);
+        CAmount minFee = 0);
+
+/**
+ * Creates and sends a transaction with multiple receivers.
+ */
+int WalletTxBuilder(
+        const std::string& senderAddress,
+        const std::vector<std::string>& receiverAddresses,
+        const std::string& redemptionAddress,
+        int64_t referenceAmount,
+        const std::vector<unsigned char>& payload,
+        uint256& retTxid,
+        std::string& retRawTx,
+        bool commit,
+        interfaces::Wallet* iWallet = nullptr,
+        CAmount minFee = 0);
+
+/**
+ * Simulates the creation of a payload to count the required outputs.
+ */
+int GetDryPayloadOutputCount(
+        const std::string& senderAddress,
+        const std::string& redemptionAddress,
+        const std::vector<unsigned char>& payload,
+        interfaces::Wallet* iWallet);
 
 #ifdef ENABLE_WALLET
 /**

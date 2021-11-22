@@ -29,6 +29,7 @@ void RequireSaneDExFee(const std::string& address, uint32_t propertyId);
 void RequireSaneNonFungibleRange(int64_t tokenStart, int64_t tokenEnd);
 void RequireHeightInChain(int blockHeight);
 void RequireNonFungibleTokenOwner(const std::string& address, uint32_t propertyId, int64_t tokenStart, int64_t tokenEnd);
+void RequireBoundedStmReceiverNumber(size_t numberOfReceivers);
 
 // TODO:
 // Checks for MetaDEx orders for cancel operations

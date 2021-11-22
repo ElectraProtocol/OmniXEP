@@ -39,10 +39,10 @@
 using mastercore::AddressToPubKey;
 using mastercore::UseEncodingClassC;
 
-/** Creates and sends a transaction. */
+/** Creates and sends a transaction with multiple receivers. */
 int WalletTxBuilder(
         const std::string& senderAddress,
-        const std::string& receiverAddress,
+        const std::vector<std::string>& receiverAddresses,
         const std::string& redemptionAddress,
         int64_t referenceAmount,
         const std::vector<unsigned char>& payload,
@@ -85,10 +85,14 @@ int WalletTxBuilder(
     }
 
     // Then add a paytopubkeyhash output for the recipient (if needed) - note we do this last as we want this to be the highest vout
-    if (!receiverAddress.empty()) {
-        CScript scriptPubKey = GetScriptForDestination(DecodeDestination(receiverAddress));
-        outputAmount += 0 < referenceAmount ? referenceAmount : OmniGetDustThreshold(scriptPubKey);
-        vecSend.push_back(std::make_pair(scriptPubKey, 0 < referenceAmount ? referenceAmount : OmniGetDustThreshold(scriptPubKey)));
+    if (!receiverAddresses.empty()) {
+        for (const std::string& receiverAddress : receiverAddresses) {
+            CScript scriptPubKey = GetScriptForDestination(DecodeDestination(receiverAddress));
+            if (!scriptPubKey.empty()) {
+                outputAmount += 0 < referenceAmount ? referenceAmount : OmniGetDustThreshold(scriptPubKey);
+                vecSend.push_back(std::make_pair(scriptPubKey, 0 < referenceAmount ? referenceAmount : OmniGetDustThreshold(scriptPubKey)));
+            }
+        }
     }
 
     // Create CRecipients for outputs
@@ -124,7 +128,7 @@ int WalletTxBuilder(
         }
 
         // Ask the wallet to create the transaction (note mining fee determined by Xep Core params)
-        int nChangePosInOut = -1;
+        int nChangePosInOut = vecRecipients.size();
         wtxNew = iWallet->createTransaction(vecRecipients, coinControl, true /* sign */, nChangePosInOut, nFeeRet, strFailReason, false, minFee);
 
         // TX creation was a success or fee no longer incremeneintg
@@ -157,7 +161,86 @@ int WalletTxBuilder(
 #else
     return MP_ERR_WALLET_ACCESS;
 #endif
+}
 
+/** Creates and sends a transaction. */
+int WalletTxBuilder(
+        const std::string& senderAddress,
+        const std::string& receiverAddress,
+        const std::string& redemptionAddress,
+        int64_t referenceAmount,
+        const std::vector<unsigned char>& payload,
+        uint256& retTxid,
+        std::string& retRawTx,
+        bool commit,
+        interfaces::Wallet* iWallet,
+        CAmount minFee)
+{
+    std::vector<std::string> receiverAddresses;
+    if (!receiverAddress.empty()) {
+        receiverAddresses.push_back(receiverAddress);
+    }
+
+    return WalletTxBuilder(
+            senderAddress,
+            receiverAddresses,
+            redemptionAddress,
+            referenceAmount,
+            payload,
+            retTxid,
+            retRawTx,
+            commit,
+            iWallet,
+            minFee);
+}
+
+
+int GetDryPayloadOutputCount(
+        const std::string& senderAddress,
+        const std::string& redemptionAddress,
+        const std::vector<unsigned char>& payload,
+        interfaces::Wallet* iWallet)
+{
+#ifdef ENABLE_WALLET
+    if (!iWallet) {
+        return MP_ERR_WALLET_ACCESS;
+    }
+
+    // Determine the class to send the transaction via - default is Class C
+    int omniTxClass = OMNI_CLASS_C;
+    if (!UseEncodingClassC(payload.size() + 1 /* OP_RETURN */ + 2 /* pushdata opcodes */)) {
+        omniTxClass = OMNI_CLASS_B;
+    }
+
+    std::vector<std::pair<CScript, int64_t> > vecSend;
+    CAmount outputAmount{0};
+
+    // Encode the data outputs
+    switch (omniTxClass) {
+        case OMNI_CLASS_B: {
+            CPubKey redeemingPubKey;
+            const std::string& sAddress = redemptionAddress.empty() ? senderAddress : redemptionAddress;
+            if (!AddressToPubKey(iWallet, sAddress, redeemingPubKey)) {
+                return MP_REDEMP_BAD_VALIDATION;
+            }
+            if (!OmniCore_Encode_ClassB(senderAddress, redeemingPubKey, payload, vecSend, &outputAmount)) {
+                return MP_ENCODING_ERROR;
+            }
+            break;
+        }
+        case OMNI_CLASS_C: {
+            if(!OmniCore_Encode_ClassC(payload, vecSend)) {
+                return MP_ENCODING_ERROR;
+            }
+            break;
+        }
+    }
+
+    return vecSend.size();
+
+#else
+    return MP_ERR_WALLET_ACCESS;
+#endif
 }
 
 #ifdef ENABLE_WALLET

@@ -9,7 +9,9 @@
 #include <base58.h>
 
 #include <stdint.h>
+#include <limits>
 #include <string>
+#include <tuple>
 #include <vector>
 
 /**
@@ -112,6 +114,41 @@ std::vector<unsigned char> CreatePayload_SendNonFungible(uint32_t propertyId, ui
     PUSH_BACK_BYTES(payload, propertyId);
     PUSH_BACK_BYTES(payload, tokenStart);
     PUSH_BACK_BYTES(payload, tokenEnd);
+
+    return payload;
+}
+
+std::vector<unsigned char> CreatePayload_SendToMany(uint32_t propertyId, std::vector<std::tuple<uint8_t, uint64_t>> outputValues)
+{
+    std::vector<unsigned char> payload;
+    uint16_t messageType = 7;
+    uint16_t messageVer = 0;
+    SwapByteOrder16(messageType);
+    SwapByteOrder16(messageVer);
+    SwapByteOrder32(propertyId);
+
+    PUSH_BACK_BYTES(payload, messageVer);
+    PUSH_BACK_BYTES(payload, messageType);
+    PUSH_BACK_BYTES(payload, propertyId);
+
+    if (outputValues.size() > std::numeric_limits<uint8_t>::max()) {
+        PrintToLog("WARNING: removing last elements from send-to-many transaction due to size limitations (%d > %d)\n",
+                outputValues.size(), std::numeric_limits<uint8_t>::max());
+
+        outputValues.erase(outputValues.begin() + std::numeric_limits<uint8_t>::max(), outputValues.end());
+    }
+
+    uint8_t outputsCount = static_cast<uint8_t>(outputValues.size());
+    PUSH_BACK_BYTES(payload, outputsCount);
+
+    for (const auto& outputValue: outputValues) {
+        uint8_t vout = std::get<0>(outputValue);
+        uint64_t amount = std::get<1>(outputValue);
+        SwapByteOrder64(amount);
+
+        PUSH_BACK_BYTES(payload, vout);
+        PUSH_BACK_BYTES(payload, amount);
+    }
 
     return payload;
 }

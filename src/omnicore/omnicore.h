@@ -62,6 +62,7 @@ enum TransactionType {
   MSC_TYPE_SEND_TO_OWNERS             =  3,
   MSC_TYPE_SEND_ALL                   =  4,
   MSC_TYPE_SEND_NONFUNGIBLE           =  5,
+  MSC_TYPE_SEND_TO_MANY               =  7,
   MSC_TYPE_SAVINGS_MARK               = 10,
   MSC_TYPE_SAVINGS_COMPROMISED        = 11,
   MSC_TYPE_RATELIMITED_MARK           = 12,
@@ -123,6 +124,7 @@ enum TransactionType {
 #define PKT_ERROR_SEND_ALL    (-83000)
 #define PKT_ERROR_ANYDATA     (-84000)
 #define PKT_ERROR_NFT         (-85000)
+#define PKT_ERROR_SEND_MANY   (-86000)
 
 #define OMNI_PROPERTY_XEP   0
 #define OMNI_PROPERTY_MSC   1
