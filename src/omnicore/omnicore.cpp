@@ -87,6 +87,15 @@ static const std::string exodus_testnet = "mpexoDuSkGGqvqrkrjiFng38QPkJQVFyqv";
 //! Testnet Exodus crowdsale address
 static const std::string getmoney_testnet = "moneyqMan7uh8FqdCA2BV5yZ8qVrc9ikLP";
 
+//! Unix time at end of Exodus crowdsale
+static const int64_t exodus_end_secs = 1377993874;
+
+//! Total amount of Dev OMNI (Dev MSC) to be issued
+static const int64_t all_reward = 5631623576222;
+
+//! Seconds per year used for Dev OMNI calculations
+static const double seconds_in_one_year = 31556926;
+
 static int nWaterlineBlock = 0;
 
 /**
@@ -516,7 +525,27 @@ bool mastercore::update_tally_map(const std::string& who, uint32_t propertyId, i
 //
 
 /**
- * Calculates and updates the "development mastercoins".
+ * Calculates the total number of "development OMNI/mastercoins" that should exist
+ * for the passed timestamp. This is a function with no side effects and does
+ * not account for the fact that timestamps can sometimes appear out-of-order.
+ * Management of previous values and "high-water mark" logic must be provided by the caller.
+
+ * @param nTime  The timestamp of the block to calculate the "Dev OMNI/MSC" for
+ * @return The number of "Dev OMNI/MSC" calculated
+ */
+static int64_t calculate_devmsc(unsigned int nTime)
+{
+    // taken mainly from msc_validate.py: def get_available_reward(height, c)
+    const double seconds_passed = nTime - exodus_end_secs; // exodus bootstrap deadline
+    const double years = seconds_passed / seconds_in_one_year;
+    const double part_available = 1 - pow(0.5, years);
+    const double available_reward = all_reward * part_available;
+
+    return rounduint64(available_reward);
+}
+
+/**
+ * Calculates and updates the "development OMNI/mastercoins".
  *
  * For every 10 MSC sold during the Exodus period, 1 additional "Dev MSC" was generated,
  * which are being awarded to the Exodus address slowly over the years.
@@ -538,21 +567,11 @@ static int64_t calculate_and_update_devmsc(unsigned int nTime, int block)
     }
 
     // do nothing if before end of fundraiser
-    if (nTime < 1377993874) return 0;
+    if (nTime < exodus_end_secs) return 0;
 
-    // taken mainly from msc_validate.py: def get_available_reward(height, c)
-    int64_t devmsc = 0;
-    int64_t exodus_delta = 0;
-    // spec constants:
-    const int64_t all_reward = 5631623576222;
-    const double seconds_in_one_year = 31556926;
-    const double seconds_passed = nTime - 1377993874; // exodus bootstrap deadline
-    const double years = seconds_passed / seconds_in_one_year;
-    const double part_available = 1 - pow(0.5, years);
-    const double available_reward = all_reward * part_available;
-
-    devmsc = rounduint64(available_reward);
-    exodus_delta = devmsc - exodus_prev;
+    // Calculate total devmsc for nTime and delta from previous block
+    int64_t devmsc = calculate_devmsc(nTime);
+    int64_t exodus_delta = devmsc - exodus_prev;
 
     if (msc_debug_exo) PrintToLog("devmsc=%d, exodus_prev=%d, exodus_delta=%d\n", devmsc, exodus_prev, exodus_delta);
 
