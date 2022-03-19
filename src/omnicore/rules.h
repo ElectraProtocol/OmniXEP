@@ -44,6 +44,8 @@ const uint16_t FEATURE_FREEDEX = 15;
 const uint16_t FEATURE_NONFUNGIBLE = 16;
 //! Feature identifier to enable delegated issuance support
 const uint16_t FEATURE_DELEGATEDISSUANCE = 17;
+//! Feature identifier to enable NFT issuer data update by issuers only
+const uint16_t FEATURE_NONFUNGIBLE_ISSUER = 18;
 
 //! When (propertyTotalTokens / OMNI_FEE_THRESHOLD) is reached fee distribution will occur
 const int64_t OMNI_FEE_THRESHOLD = 100000; // 0.001%
@@ -159,6 +161,8 @@ public:
     int FREEZENOTICE_FEATURE_BLOCK;
     //! Block to activate the waiting period to activate trading of any token on the distributed exchange
     int FREEDEX_FEATURE_BLOCK;
+    //! Block to activate the ability for only issuers to update issuer data on NFTs
+    int NONFUNGIBLETOKEN_ISSUER_DATA;
 
     /** Returns a mapping of transaction types, and the blocks at which they are enabled. */
     virtual std::vector<TransactionRestriction> GetRestrictions() const;

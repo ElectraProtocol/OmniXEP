@@ -218,6 +218,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "omni_getwalletaddressbalances", 0, "includewatchonly" },
     { "omni_getnonfungibletokens", 1, "propertyid"},
     { "omni_getnonfungibletokendata", 0, "propertyid"},
+    { "omni_getnonfungibletokendata", 1, "tokenidstart"},
     { "omni_getnonfungibletokendata", 2, "tokenidend"},
     { "omni_getnonfungibletokenranges", 0, "propertyid"},
     { "omni_getnonfungibletokenranges", 0, "propertyid"},
@@ -335,8 +336,9 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "omni_createpayload_sendnonfungible", 1, "tokenstart"},
     { "omni_createpayload_sendnonfungible", 2, "tokenend"},
     { "omni_createpayload_setnonfungibledata", 0, "propertyid"},
-    { "omni_createpayload_setnonfungibledata", 1, "tokenid"},
-    { "omni_createpayload_setnonfungibledata", 2, "issuer"},
+    { "omni_createpayload_setnonfungibledata", 1, "tokenstart"},
+    { "omni_createpayload_setnonfungibledata", 2, "tokenend"},
+    { "omni_createpayload_setnonfungibledata", 3, "issuer"},
 
     /* Omni Core - backwards compatibility */
     { "getcrowdsale_MP", 0, "propertyid" },

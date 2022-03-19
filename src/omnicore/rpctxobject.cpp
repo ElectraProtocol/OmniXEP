@@ -589,7 +589,8 @@ void populateRPCTypeSetNonFungibleData(CMPTransaction& omniObj, UniValue& txobj)
 {
     uint32_t propertyId = omniObj.getProperty();
     txobj.pushKV("propertyid", (uint64_t)propertyId);
-    txobj.pushKV("tokenid", omniObj.getNonFungibleTokenStart());
+    txobj.pushKV("tokenstart", omniObj.getNonFungibleTokenStart());
+    txobj.pushKV("tokenend", omniObj.getNonFungibleTokenEnd());
     txobj.pushKV("issuer", omniObj.getNonFungibleDataType() == 1 ? "true" : "false");
     txobj.pushKV("data", omniObj.getNonFungibleData());
 }

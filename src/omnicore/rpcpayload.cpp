@@ -774,7 +774,7 @@ static const CRPCCommand commands[] =
     { "omni layer (payload creation)", "omni_createpayload_removedelegate",      &omni_createpayload_removedelegate,      {"propertyid"} },
     { "omni layer (payload creation)", "omni_createpayload_anydata",             &omni_createpayload_anydata,             {"data"} },
     { "omni layer (payload creation)", "omni_createpayload_sendnonfungible",     &omni_createpayload_sendnonfungible,     {"propertyid", "tokenstart", "tokenend"} },
-    { "omni layer (payload creation)", "omni_createpayload_setnonfungibledata",  &omni_createpayload_setnonfungibledata,  {"propertyid", "tokenid", "issuer", "data"} },
+    { "omni layer (payload creation)", "omni_createpayload_setnonfungibledata",  &omni_createpayload_setnonfungibledata,  {"propertyid", "tokenstart", "tokenend", "issuer", "data"} },
 };
 
 void RegisterOmniPayloadCreationRPCCommands(CRPCTable &tableRPC)
