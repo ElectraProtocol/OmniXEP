@@ -339,6 +339,46 @@ inline std::string error_str(int ec) {
           ec_str = "Address is already frozen";
           break;
 
+      case PKT_ERROR_NFT -20:
+          ec_str = "Non-fungible tokens are not yet activated";
+          break;
+      case PKT_ERROR_NFT -21:
+          ec_str = "Property %d is of type non-fungible";
+          break;
+      case PKT_ERROR_NFT -23:
+          ec_str = "Type or version not permitted for property";
+          break;
+      case PKT_ERROR_NFT -24:
+          ec_str = "Property is not of type non-fungible";
+          break;
+      case PKT_ERROR_NFT -25:
+          ec_str = "Non-fungible token range start value out of range or zero";
+          break;
+      case PKT_ERROR_NFT -26:
+          ec_str = "Non-fungible token range end value out of range or zero";
+          break;
+      case PKT_ERROR_NFT -27:
+          ec_str = "Non-fungible token range start value is less than or equal to range end value";
+          break;
+      case PKT_ERROR_NFT -28:
+          ec_str = "Non-fungible token range amount out of range or zero";
+          break;
+      case PKT_ERROR_NFT -29:
+          ec_str = "Property does not exist";
+          break;
+      case PKT_ERROR_NFT -30:
+          ec_str = "Sender does not own the range data is being set on";
+          break;
+      case PKT_ERROR_NFT -31:
+          ec_str = "Sender is not the issuer of property";
+          break;
+      case PKT_ERROR_NFT -32:
+          ec_str = "Sender has insufficient balance of property";
+          break;
+      case PKT_ERROR_NFT -33:
+          ec_str = "Sender %s does not own the range being sent";
+          break;
+
       default:
           ec_str = "Unknown error";
   }
