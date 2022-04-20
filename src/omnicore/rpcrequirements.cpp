@@ -15,7 +15,6 @@
 #include <tinyformat.h>
 
 #include <stdint.h>
-#include <limits>
 #include <string>
 
 void RequireBalance(const std::string& address, uint32_t propertyId, int64_t amount)
@@ -265,9 +264,9 @@ void RequireNonFungibleTokenOwner(const std::string& address, uint32_t propertyI
     }
 }
 
-void RequireBoundedStmReceiverNumber(size_t numberOfReceivers)
+void RequireBoundedStmReceiverNumber(size_t numberOfOutputs)
 {
-    if (numberOfReceivers > std::numeric_limits<uint8_t>::max()) {
+    if (numberOfOutputs > std::numeric_limits<uint8_t>::max() + 1) { // index = 0 included
         throw JSONRPCError(RPC_TYPE_ERROR, "Too many send-to-many receivers");
     }
 }

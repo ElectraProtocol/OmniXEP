@@ -348,7 +348,6 @@ void populateRPCTypeSendToMany(CMPTransaction& omniObj, UniValue& txobj)
     UniValue outputValues(UniValue::VARR);
 
     for (const std::tuple<uint8_t, uint64_t>& entry : omniObj.getStmOutputValues()) {
-        
         uint8_t output = std::get<0>(entry);
         std::string amount = FormatMP(propertyId, std::get<1>(entry));
         std::string destination;

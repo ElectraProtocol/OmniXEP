@@ -255,30 +255,17 @@ public:
     std::string getNonFungibleData() const { return nonfungible_data; }
 
     // Send To Many
-    uint8_t getStmNumberOfReceivers() const {
-        return numberOfSTMReceivers;
-    }
+    // ** Returns number of STM receivers. */
+    uint8_t getStmNumberOfReceivers();
 
     /** Returns output valies. */
-    std::vector<std::tuple<uint8_t, uint64_t>> getStmOutputValues() const {
-        return outputValuesForSTM;
-    }
+    std::vector<std::tuple<uint8_t, uint64_t>> getStmOutputValues();
 
     /** Adds an address at position output. */
-    void addValidStmAddress(uint8_t output, const std::string& address) {
-        validOutputAddressesForSTM[output] = address;
-    }
+    void addValidStmAddress(size_t output, const std::string& address);
 
     /** Return an output address, if it's considered as valid Omni destination. */
-    bool getValidStmAddressAt(uint8_t output, std::string& addressOut) {
-        if (validOutputAddressesForSTM.find(output) != validOutputAddressesForSTM.end()) {
-            addressOut = validOutputAddressesForSTM[output];
-            return true;
-        }
-
-        addressOut.clear();
-        return false;
-    }
+    bool getValidStmAddressAt(uint8_t output, std::string& addressOut);
 
     /** Creates a new CMPTransaction object. */
     CMPTransaction()

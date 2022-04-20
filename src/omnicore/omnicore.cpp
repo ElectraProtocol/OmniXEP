@@ -1063,7 +1063,7 @@ static int parseTransaction(bool bRPConly, const CTransaction& wtx, int nBlock, 
     std::vector<std::string> address_data;
     std::vector<int64_t> value_data;
 
-    for (unsigned int n = 0; n < wtx.vout.size(); ++n) {
+    for (size_t n = 0; n < wtx.vout.size(); ++n) {
         txnouttype whichType;
         if (!GetOutputType(wtx.vout[n].scriptPubKey, whichType)) {
             continue;
@@ -1078,9 +1078,7 @@ static int parseTransaction(bool bRPConly, const CTransaction& wtx, int nBlock, 
                 GetScriptPushes(wtx.vout[n].scriptPubKey, script_data);
                 std::string address = EncodeDestination(dest);
                 address_data.push_back(address);
-                if (!address.empty()) {
-                    mp_tx.addValidStmAddress(n, address);
-                }
+                mp_tx.addValidStmAddress(n, address);
                 value_data.push_back(wtx.vout[n].nValue);
                 if (msc_debug_parser_data) PrintToLog("saving address_data #%d: %s:%s\n", n, EncodeDestination(dest), ScriptToAsmStr(wtx.vout[n].scriptPubKey));
             }

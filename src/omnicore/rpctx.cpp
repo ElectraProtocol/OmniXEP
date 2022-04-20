@@ -508,7 +508,8 @@ static UniValue omni_sendtomany(const JSONRPCRequest& request)
     std::string fromAddress = ParseAddress(request.params[0]);
     uint32_t propertyId = ParsePropertyId(request.params[1]);
 
-    RequireBoundedStmReceiverNumber(request.params[2].size());
+    // first check, assuming one payload output
+    RequireBoundedStmReceiverNumber(request.params[2].size() + 1);
 
     // ---
     // dry run to get positions for send-to-many outputs
@@ -518,9 +519,9 @@ static UniValue omni_sendtomany(const JSONRPCRequest& request)
     std::vector<std::tuple<uint8_t, uint64_t>> outputValues;
 
     uint64_t amountToSend = 0;
-    uint8_t output = 1; // dummy position
+    size_t dummyOutputCount = 0;
 
-    for (unsigned int idx = 0; idx < request.params[2].size(); idx++) {
+    for (size_t idx = 0; idx < request.params[2].size(); idx++) {
         const UniValue& input = request.params[2][idx];
         const UniValue& o = input.get_obj();
 
@@ -532,24 +533,25 @@ static UniValue omni_sendtomany(const JSONRPCRequest& request)
 
         amountToSend += amount;
         receiverAddresses.push_back(address);
-        outputValues.push_back(std::make_tuple(output, amount));
+        outputValues.push_back(std::make_tuple(idx, amount)); // note, this would be an invalid position
 
-        output += 1;
+        dummyOutputCount += 1;
     }
 
     std::vector<unsigned char> testPayload = CreatePayload_SendToMany(
         propertyId,
         outputValues);
 
-    int outputCount = GetDryPayloadOutputCount(fromAddress, "", testPayload, pwallet.get());
+    int payloadOutputCount = GetDryPayloadOutputCount(fromAddress, "", testPayload, pwallet.get());
 
     // perform checks
-    RequireExistingProperty(propertyId);
-    RequireBalance(fromAddress, propertyId, amountToSend);
-
-    if (outputCount < 0) {
+    if (payloadOutputCount < 0) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Error creating send-to-many payload");
     }
+    // actual check with proper payload count
+    RequireBoundedStmReceiverNumber(payloadOutputCount + dummyOutputCount);
+    RequireExistingProperty(propertyId);
+    RequireBalance(fromAddress, propertyId, amountToSend);
 
     // ---
     // actual run
@@ -557,9 +559,9 @@ static UniValue omni_sendtomany(const JSONRPCRequest& request)
 
     receiverAddresses.clear();
     outputValues.clear();
-    output = outputCount;
+    uint8_t output = static_cast<uint8_t>(payloadOutputCount);
 
-    for (unsigned int idx = 0; idx < request.params[2].size(); idx++) {
+    for (size_t idx = 0; idx < request.params[2].size(); idx++) {
         const UniValue& input = request.params[2][idx];
         const UniValue& o = input.get_obj();
 

@@ -38,6 +38,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <limits>
 #include <utility>
 #include <vector>
 #include <tuple>
@@ -113,6 +114,37 @@ bool CMPTransaction::isOverrun(const char* p)
     ptrdiff_t pos = (char*) p - (char*) &pkt;
     return (pos > pkt_size);
 }
+
+// ** Returns number of STM receivers. */
+uint8_t CMPTransaction::getStmNumberOfReceivers() {
+    return numberOfSTMReceivers;
+}
+
+/** Returns output valies. */
+std::vector<std::tuple<uint8_t, uint64_t>> CMPTransaction::getStmOutputValues() {
+    return outputValuesForSTM;
+}
+
+/** Adds an address at position output. */
+void CMPTransaction::addValidStmAddress(size_t output, const std::string& address) {
+    if (output <= std::numeric_limits<uint8_t>::max()) {
+        if (!address.empty()) {
+            validOutputAddressesForSTM[output] = address;
+        }
+    }
+}
+
+/** Return an output address, if it's considered as valid Omni destination. */
+bool CMPTransaction::getValidStmAddressAt(uint8_t output, std::string& addressOut) {
+    if (validOutputAddressesForSTM.find(output) != validOutputAddressesForSTM.end()) {
+        addressOut = validOutputAddressesForSTM[output];
+        return true;
+    }
+
+    addressOut.clear();
+    return false;
+}
+
 
 // -------------------- PACKET PARSING -----------------------
 
@@ -1676,7 +1708,6 @@ int CMPTransaction::logicMath_SendToMany()
 
         std::string receiver;
         assert(getValidStmAddressAt(output, receiver));
-
         assert(update_tally_map(sender, property, -amount, BALANCE));
         assert(update_tally_map(receiver, property, amount, BALANCE));
     }

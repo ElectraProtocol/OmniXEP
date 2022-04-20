@@ -12,6 +12,8 @@
 
 #include <univalue.h>
 
+#include <stdint.h>
+
 using std::runtime_error;
 using namespace mastercore;
 
@@ -164,7 +166,7 @@ static UniValue omni_createpayload_sendtomany(const JSONRPCRequest& request)
         const UniValue& uvOutput = find_value(o, "output");
         const UniValue& uvAmount = find_value(o, "amount");
 
-        uint8_t output = uvOutput.get_int();
+        uint8_t output = ParseStmOutputIndex(uvOutput);
         uint64_t amount = ParseAmount(uvAmount, isPropertyDivisible(propertyId));
 
         outputValues.push_back(std::make_tuple(output, amount));

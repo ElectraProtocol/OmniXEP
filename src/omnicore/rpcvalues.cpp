@@ -17,6 +17,7 @@
 
 #include <univalue.h>
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -253,4 +254,13 @@ std::vector<PrevTxsEntry> ParsePrevTxs(const UniValue& value)
     }
 
     return prevTxsParsed;
+}
+
+uint8_t ParseStmOutputIndex(const UniValue& value)
+{
+    int64_t index = value.get_int64();
+    if (index < 0 || index > std::numeric_limits<uint8_t>::max()) {
+        throw JSONRPCError(RPC_TYPE_ERROR, "Output index out of bounds (0..255)");
+    }
+    return static_cast<uint8_t>(index);
 }
