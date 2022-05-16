@@ -1496,9 +1496,11 @@ int CMPTransaction::logicMath_SendAll()
         return (PKT_ERROR_SEND_ALL -22);
     }
 
-    if (isPropertyNonFungible(property)) {
-        PrintToLog("%s(): rejected: property %d is of type non-fungible\n", __func__, property);
-        return (PKT_ERROR_NFT -21);
+    if (!IsFeatureActivated(FEATURE_NONFUNGIBLE_ISSUER, block)) {
+        if (isPropertyNonFungible(property)) {
+            PrintToLog("%s(): rejected: property %d is of type non-fungible\n", __func__, property);
+            return (PKT_ERROR_NFT -21);
+        }
     }
 
     // ------------------------------------------
@@ -1525,6 +1527,14 @@ int CMPTransaction::logicMath_SendAll()
         if (isAddressFrozen(sender, propertyId)) {
             PrintToLog("%s(): sender %s is frozen for property %d - the property will not be included in processing.\n", __func__, sender, propertyId);
             continue;
+        }
+
+        if (IsFeatureActivated(FEATURE_NONFUNGIBLE_ISSUER, block)) {
+            // do not transfer non-fungible tokens
+            if (isPropertyNonFungible(propertyId)) {
+                PrintToConsole("%s: property %d is non-fungible and will not be included in processing.\n", __func__, propertyId);
+                continue;
+            }
         }
 
         int64_t moneyAvailable = ptally->getMoney(propertyId, BALANCE);
