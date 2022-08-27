@@ -1283,7 +1283,7 @@ List wallet transactions, optionally filtered by an address and block boundaries
 
 | Name                | Type    | Presence | Description                                                                                  |
 |---------------------|---------|----------|----------------------------------------------------------------------------------------------|
-| `txid`              | string  | optional | address filter (default: `"*"`)                                                              |
+| `address`           | string  | optional | address filter (default: `"*"`)                                                              |
 | `count`             | number  | optional | show at most n transactions (default: `10`)                                                  |
 | `skip`              | number  | optional | skip the first n transactions (default: `0`)                                                 |
 | `startblock`        | number  | optional | first block to begin the search (default: `0`)                                               |
