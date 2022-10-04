@@ -1978,6 +1978,7 @@ static UniValue omni_gettradehistoryforaddress(const JSONRPCRequest& request)
                        {
                            {RPCResult::Type::STR_HEX, "txid", "the hash of the transaction that was matched against"},
                            {RPCResult::Type::NUM, "block", "the index of the block that contains this transaction"},
+                           {RPCResult::Type::NUM, "blocktime", "the timestamp of the block that contains the match"},
                            {RPCResult::Type::STR, "address", "the Xep address of the other trader"},
                            {RPCResult::Type::STR_AMOUNT, "amountsold", "the number of tokens sold in this trade"},
                            {RPCResult::Type::STR_AMOUNT, "amountreceived", "the number of tokens traded in exchange"},
@@ -2039,6 +2040,7 @@ static UniValue omni_gettradehistoryforpair(const JSONRPCRequest& request)
                {RPCResult::Type::OBJ, "", "",
                {
                    {RPCResult::Type::NUM, "block", "the index of the block that contains the trade match"},
+                   {RPCResult::Type::NUM, "blocktime", "the timestamp of the block that contains the match"},
                    {RPCResult::Type::STR_AMOUNT, "unitprice", "the unit price used to execute this trade (received/sold)"},
                    {RPCResult::Type::STR_AMOUNT, "inverseprice", "the inverse unit price (sold/received)"},
                    {RPCResult::Type::STR_HEX, "sellertxid", "the hash of the transaction of the seller"},
@@ -2742,6 +2744,7 @@ static UniValue omni_gettrade(const JSONRPCRequest& request)
                    {
                        {RPCResult::Type::STR_HEX, "txid", "the hash of the transaction that was matched against"},
                        {RPCResult::Type::NUM, "block", "the index of the block that contains this transaction"},
+                       {RPCResult::Type::NUM, "blocktime", "the timestamp of the block that contains the match"},
                        {RPCResult::Type::STR, "address", "the Xep address of the other trader"},
                        {RPCResult::Type::STR_AMOUNT, "amountsold", "the number of tokens sold in this trade"},
                        {RPCResult::Type::STR_AMOUNT, "amountreceived", "the number of tokens traded in exchange"},

@@ -1748,6 +1748,7 @@ Get detailed information and trade matches for orders on the distributed token e
     {
       "txid" : "hash",                              // (string) the hash of the transaction that was matched against
       "block" : nnnnnn,                             // (number) the index of the block that contains this transaction
+      "blocktime" : nnnnnnnnnn,                     // (number) the timestamp of the block that contains the match
       "address" : "address",                        // (string) the Xep address of the other trader
       "amountsold" : "n.nnnnnnnn",                  // (string) the number of tokens sold in this trade
       "amountreceived" : "n.nnnnnnnn"               // (string) the number of tokens traded in exchange
@@ -1824,6 +1825,7 @@ Retrieves the history of trades on the distributed token exchange for the specif
 [                                     // (array of JSON objects)
   {
     "block" : nnnnnn,                     // (number) the index of the block that contains the trade match
+    "blocktime" : nnnnnnnnnn,             // (number) the timestamp of the block that contains the match
     "unitprice" : "n.nnnnnnnnnnn..." ,    // (string) the unit price used to execute this trade (received/sold)
     "inverseprice" : "n.nnnnnnnnnnn...",  // (string) the inverse unit price (sold/received)
     "sellertxid" : "hash",                // (string) the hash of the transaction of the seller
@@ -1885,6 +1887,7 @@ Retrieves the history of orders on the distributed exchange for the supplied add
       {
         "txid" : "hash",                              // (string) the hash of the transaction that was matched against
         "block" : nnnnnn,                             // (number) the index of the block that contains this transaction
+        "blocktime" : nnnnnnnnnn,                     // (number) the timestamp of the block that contains the match
         "address" : "address",                        // (string) the Xep address of the other trader
         "amountsold" : "n.nnnnnnnn",                  // (string) the number of tokens sold in this trade
         "amountreceived" : "n.nnnnnnnn"               // (string) the number of tokens traded in exchange
