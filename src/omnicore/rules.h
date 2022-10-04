@@ -48,6 +48,8 @@ const uint16_t FEATURE_DELEGATEDISSUANCE = 17;
 const uint16_t FEATURE_NONFUNGIBLE_ISSUER = 18;
 //! Feature identifier to enable send-to-many support
 const uint16_t FEATURE_SEND_TO_MANY = 19;
+//! Feature identifier to enable NFTs
+const uint16_t FEATURE_NFTS = 20;
 
 //! When (propertyTotalTokens / OMNI_FEE_THRESHOLD) is reached fee distribution will occur
 const int64_t OMNI_FEE_THRESHOLD = 100000; // 0.001%
@@ -150,6 +152,8 @@ public:
     int MSC_DELEGATED_ISSUANCE_BLOCK;
     //! Block to enable send-to-many
     int MSC_SEND_TO_MANY_BLOCK;
+    //! Block to enable NFTs
+    int MSC_NFT_BLOCK;
 
     //! Block to deactivate crowdsale participations when "granting tokens"
     int GRANTEFFECTS_FEATURE_BLOCK;

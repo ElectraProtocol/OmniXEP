@@ -178,6 +178,7 @@ CMainConsensusParams::CMainConsensusParams()
     MSC_NONFUNGIBLE_BLOCK = GENESIS_BLOCK;
     MSC_DELEGATED_ISSUANCE_BLOCK = GENESIS_BLOCK;
     MSC_SEND_TO_MANY_BLOCK = std::numeric_limits<int>::max();
+    MSC_NFT_BLOCK = std::numeric_limits<int>::max();
     // Other feature activations:
     GRANTEFFECTS_FEATURE_BLOCK = GENESIS_BLOCK;
     DEXMATH_FEATURE_BLOCK = GENESIS_BLOCK;
@@ -226,6 +227,7 @@ CTestNetConsensusParams::CTestNetConsensusParams()
     MSC_NONFUNGIBLE_BLOCK = 0;
     MSC_DELEGATED_ISSUANCE_BLOCK = 0;
     MSC_SEND_TO_MANY_BLOCK = 0;
+    MSC_NFT_BLOCK = 999999;
     // Other feature activations:
     GRANTEFFECTS_FEATURE_BLOCK = 0;
     DEXMATH_FEATURE_BLOCK = 0;
@@ -274,6 +276,7 @@ CRegTestConsensusParams::CRegTestConsensusParams()
     MSC_NONFUNGIBLE_BLOCK = 0;
     MSC_DELEGATED_ISSUANCE_BLOCK = 0;
     MSC_SEND_TO_MANY_BLOCK = 0;
+    MSC_NFT_BLOCK = 999999;
     // Other feature activations:
     GRANTEFFECTS_FEATURE_BLOCK = 999999;
     DEXMATH_FEATURE_BLOCK = 999999;
@@ -477,6 +480,9 @@ bool ActivateFeature(uint16_t featureId, int activationBlock, uint32_t minClient
         case FEATURE_SEND_TO_MANY:
             MutableConsensusParams().MSC_SEND_TO_MANY_BLOCK = activationBlock;
         break;
+        case FEATURE_NFTS:
+            MutableConsensusParams().MSC_NFT_BLOCK = activationBlock;
+        break;
         default:
             supported = false;
         break;
@@ -563,6 +569,9 @@ bool DeactivateFeature(uint16_t featureId, int transactionBlock)
         case FEATURE_SEND_TO_MANY:
             MutableConsensusParams().MSC_SEND_TO_MANY_BLOCK = 999999;
         break;
+        case FEATURE_NFTS:
+            MutableConsensusParams().MSC_NFT_BLOCK = 999999;
+        break;
         default:
             return false;
         break;
@@ -600,6 +609,7 @@ std::string GetFeatureName(uint16_t featureId)
         case FEATURE_NONFUNGIBLE_ISSUER: return "NFT issuer data update by issuers only";
         case FEATURE_DELEGATEDISSUANCE: return "Activate delegated issuance of tokens";
         case FEATURE_SEND_TO_MANY: return "Activate send-to-many transactions";
+        case FEATURE_NFTS: return "Activate NFT transactions";
 
         default: return "Unknown feature";
     }
@@ -664,6 +674,9 @@ bool IsFeatureActivated(uint16_t featureId, int transactionBlock)
         break;
         case FEATURE_SEND_TO_MANY:
             activationBlock = params.MSC_SEND_TO_MANY_BLOCK;
+        break;
+        case FEATURE_NFTS:
+            activationBlock = params.MSC_NFT_BLOCK;
         break;
         default:
             return false;
