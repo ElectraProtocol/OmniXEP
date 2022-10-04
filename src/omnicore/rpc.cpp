@@ -202,6 +202,10 @@ UniValue omni_getnonfungibletokens(const JSONRPCRequest& request)
        }
     }.Check(request);
 
+    if (!IsFeatureActivated(FEATURE_NFTS, GetHeight())) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "NFTs not activated");
+    }
+
     std::string address = ParseAddress(request.params[0]);
     uint32_t propertyId{0};
     if (!request.params[1].isNull()) {
@@ -263,6 +267,10 @@ UniValue omni_getnonfungibletokendata(const JSONRPCRequest& request)
            + HelpExampleRpc("omni_getnonfungibletokendata", "1, 10, 20")
        }
     }.Check(request);
+
+    if (!IsFeatureActivated(FEATURE_NFTS, GetHeight())) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "NFTs not activated");
+    }
 
     uint32_t propertyId = ParsePropertyId(request.params[0]);
 
@@ -351,6 +359,10 @@ UniValue omni_getnonfungibletokenranges(const JSONRPCRequest& request)
            + HelpExampleRpc("omni_getnonfungibletokenranges", "1")
        }
     }.Check(request);
+
+    if (!IsFeatureActivated(FEATURE_NFTS, GetHeight())) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "NFTs not activated");
+    }
 
     uint32_t propertyId = ParsePropertyId(request.params[0]);
 

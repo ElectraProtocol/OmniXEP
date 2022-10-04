@@ -366,6 +366,10 @@ static UniValue omni_sendnonfungible(const JSONRPCRequest& request)
        }
     }.Check(request);
 
+    if (!IsFeatureActivated(FEATURE_NFTS, GetHeight())) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "NFTs not activated");
+    }
+
     std::string fromAddress = ParseAddress(request.params[0]);
     std::string toAddress = ParseAddress(request.params[1]);
     uint32_t propertyId = ParsePropertyId(request.params[2]);
@@ -427,6 +431,10 @@ static UniValue omni_setnonfungibledata(const JSONRPCRequest& request)
             + HelpExampleRpc("omni_setnonfungibledata", "70, 55, 60, true, \"string data\"")
         }
     }.Check(request);
+
+    if (!IsFeatureActivated(FEATURE_NFTS, GetHeight())) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "NFTs not activated");
+    }
 
     uint32_t propertyId = ParsePropertyId(request.params[0]);
     uint64_t tokenStart = request.params[1].get_int64();
@@ -1204,6 +1212,10 @@ static UniValue omni_sendissuancemanaged(const JSONRPCRequest& request)
     std::string name = ParseText(request.params[6]);
     std::string url = ParseText(request.params[7]);
     std::string data = ParseText(request.params[8]);
+
+    if (type == 5 && !IsFeatureActivated(FEATURE_NFTS, GetHeight())) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "NFTs not activated");
+    }
 
     // perform checks
     RequirePropertyName(name);
