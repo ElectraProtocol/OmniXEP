@@ -507,8 +507,10 @@ static void prune_state_files(const CBlockIndex* topIndex)
  */
 static int GetWrapModeHeight()
 {
+    static int nSkipBlocksUntil = gArgs.GetArg("-omniskipstoringstate", DONT_STORE_MAINNET_STATE_UNTIL);
+    
     if (MainNet()) {
-        return DONT_STORE_MAINNET_STATE_UNTIL;
+        return nSkipBlocksUntil;
     } else {
         return 0;
     }
