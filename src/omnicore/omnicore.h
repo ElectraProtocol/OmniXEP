@@ -31,9 +31,9 @@ int const MAX_STATE_HISTORY = 100;
 // Also store the state every 5000 blocks to be able to recover
 // from a crash or shutdown during reparse more quickly
 int const STORE_EVERY_N_BLOCK = 5000;
-// Don't store the state every block on mainnet until block 622000
+// Don't store the state every block on mainnet until block 770000
 // was reached, can be set with -omniskipstoringstate.
-int const DONT_STORE_MAINNET_STATE_UNTIL = 622000;
+int const DONT_STORE_MAINNET_STATE_UNTIL = 770000;
 
 #define TEST_ECO_PROPERTY_1 (0x80000003UL)
 
