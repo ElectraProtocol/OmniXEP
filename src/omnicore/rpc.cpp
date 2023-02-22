@@ -317,10 +317,10 @@ UniValue omni_getnonfungibletokendata(const JSONRPCRequest& request)
     UniValue result(UniValue::VARR);
     for (; start <= end; ++start)
     {
-        auto owner = pDbNFT->GetNonFungibleTokenOwner(propertyId, start);
-        auto grantData = pDbNFT->GetNonFungibleTokenData(propertyId, start, NonFungibleStorage::GrantData);
-        auto issuerData = pDbNFT->GetNonFungibleTokenData(propertyId, start, NonFungibleStorage::IssuerData);
-        auto holderData = pDbNFT->GetNonFungibleTokenData(propertyId, start, NonFungibleStorage::HolderData);
+        auto owner = pDbNFT->GetNonFungibleTokenValue(propertyId, start, NonFungibleStorage::RangeIndex);
+        auto grantData = pDbNFT->GetNonFungibleTokenValue(propertyId, start, NonFungibleStorage::GrantData);
+        auto issuerData = pDbNFT->GetNonFungibleTokenValue(propertyId, start, NonFungibleStorage::IssuerData);
+        auto holderData = pDbNFT->GetNonFungibleTokenValue(propertyId, start, NonFungibleStorage::HolderData);
 
         UniValue rpcObj(UniValue::VOBJ);
         rpcObj.pushKV("index", start);

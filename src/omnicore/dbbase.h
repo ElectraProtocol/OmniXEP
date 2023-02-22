@@ -1,11 +1,13 @@
 #ifndef XEP_OMNICORE_DBBASE_H
 #define XEP_OMNICORE_DBBASE_H
 
+#include <algorithm>
 #include <leveldb/db.h>
 
 #include <fs.h>
 
 #include <assert.h>
+#include <memory>
 #include <stddef.h>
 
 /** Base class for LevelDB based storage.
@@ -93,5 +95,48 @@ public:
     void Clear();
 };
 
+class CDBaseIterator
+{
+private:
+    std::unique_ptr<leveldb::Iterator> it;
+
+public:
+    explicit CDBaseIterator(leveldb::Iterator* i, const std::string& first = {}) : it(i)
+    {
+        assert(it);
+        first.empty() ? it->SeekToFirst() : it->Seek(first);
+    }
+
+    CDBaseIterator& operator=(CDBaseIterator&& i)
+    {
+        it = std::move(i.it);
+        assert(it);
+        return *this;
+    }
+
+    CDBaseIterator& operator++()
+    {
+        assert(it->Valid());
+        it->Next();
+        return *this;
+    }
+
+    CDBaseIterator& operator--()
+    {
+        assert(it->Valid());
+        it->Prev();
+        return *this;
+    }
+
+    operator bool() const
+    {
+        return it->Valid();
+    }
+
+    leveldb::Iterator* operator->()
+    {
+        return it.get();
+    }
+};
 
 #endif // XEP_OMNICORE_DBBASE_H

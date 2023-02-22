@@ -256,10 +256,8 @@ void RequireHeightInChain(int blockHeight)
 
 void RequireNonFungibleTokenOwner(const std::string& address, uint32_t propertyId, int64_t tokenStart, int64_t tokenEnd)
 {
-    std::string rangeStartOwner = mastercore::pDbNFT->GetNonFungibleTokenOwner(propertyId, tokenStart);
-    std::string rangeEndOwner = mastercore::pDbNFT->GetNonFungibleTokenOwner(propertyId, tokenEnd);
-    bool contiguous = mastercore::pDbNFT->IsRangeContiguous(propertyId, tokenStart, tokenEnd);
-    if (rangeStartOwner != address || rangeEndOwner != address || !contiguous) {
+    std::string rangeStartOwner = mastercore::pDbNFT->GetNonFungibleTokenValueInRange(propertyId, tokenStart, tokenEnd);
+    if (rangeStartOwner != address) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Sender does not own the range");
     }
 }

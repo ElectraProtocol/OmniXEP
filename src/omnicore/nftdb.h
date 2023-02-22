@@ -38,19 +38,10 @@ public:
     void printStats();
     void printAll();
 
-    // Helper to extract the property ID from a DB key
-    uint32_t GetPropertyIdFromKey(const std::string& key);
-    // Extracts the storage type from a DB key
-    NonFungibleStorage GetTypeFromKey(const std::string& key);
-    // Helper to extracts the range from a DB key
-    void GetRangeFromKey(const std::string& key, int64_t *start, int64_t *end);
-
-    // Gets the owner of a range of non-fungible tokens
-    std::string GetNonFungibleTokenOwner(const uint32_t &propertyId, const int64_t &tokenId);
     // Gets the data set in a non-fungible token
-    std::string GetNonFungibleTokenData(const uint32_t &propertyId, const int64_t &tokenId, const NonFungibleStorage type);
+    std::string GetNonFungibleTokenValue(const uint32_t &propertyId, const int64_t &tokenId, const NonFungibleStorage type);
     // Checks if the range of tokens is contiguous (ie owned by a single address)
-    bool IsRangeContiguous(const uint32_t &propertyId, const int64_t &rangeStart, const int64_t &rangeEnd);
+    std::string GetNonFungibleTokenValueInRange(const uint32_t &propertyId, const int64_t &rangeStart, const int64_t &rangeEnd);
     // Counts the highest token range end (which is thus the total number of tokens)
     int64_t GetHighestRangeEnd(const uint32_t &propertyId);
     // Creates a range of non-fungible tokens
@@ -68,7 +59,7 @@ public:
     // Gets the non-fungible token ranges for a property ID and address
     std::map<uint32_t, std::vector<std::pair<int64_t, int64_t>>> GetAddressNonFungibleTokens(const uint32_t &propertyId, const std::string &address);
     // Gets the non-fungible token ranges for a property ID
-    std::vector<std::pair<std::string,std::pair<int64_t,int64_t> > > GetNonFungibleTokenRanges(const uint32_t &propertyId);
+    std::vector<std::pair<std::string,std::pair<int64_t,int64_t>>> GetNonFungibleTokenRanges(const uint32_t &propertyId);
     // Sanity checks the token counts
     void SanityCheck();
 };

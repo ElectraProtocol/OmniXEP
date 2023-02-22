@@ -446,11 +446,11 @@ static UniValue omni_setnonfungibledata(const JSONRPCRequest& request)
     RequireNonFungibleProperty(propertyId);
     RequireSaneNonFungibleRange(tokenStart, tokenEnd);
 
-    if (!issuer && !pDbNFT->IsRangeContiguous(propertyId, tokenStart, tokenEnd)) {
+    std::string fromAddress = pDbNFT->GetNonFungibleTokenValueInRange(propertyId, tokenStart, tokenEnd);
+
+    if (!issuer && fromAddress.empty()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Range set owned by multiple addresses, set data one owner a time");
     }
-
-    std::string fromAddress = pDbNFT->GetNonFungibleTokenOwner(propertyId, tokenStart);
 
     if (issuer) {
         CMPSPInfo::Entry sp;

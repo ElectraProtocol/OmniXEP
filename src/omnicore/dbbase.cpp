@@ -33,14 +33,12 @@ void CDBBase::Clear()
     int64_t nTimeStart = GetTimeMicros();
     unsigned int n = 0;
     leveldb::WriteBatch batch;
-    leveldb::Iterator* it = NewIterator();
+    CDBaseIterator it{NewIterator()};
 
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+    for (; it; ++it) {
         batch.Delete(it->key());
         ++n;
     }
-
-    delete it;
 
     leveldb::Status status = pdb->Write(writeoptions, &batch);
     nRead = 0;

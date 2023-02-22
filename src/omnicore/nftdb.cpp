@@ -12,48 +12,41 @@
 
 #include <validation.h>
 
+#include <climits>
+#include <cstdint>
 #include <stdint.h>
+#include <tuple>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
 typedef std::underlying_type<NonFungibleStorage>::type StorageType;
 
-/* Extracts the property ID from a DB key
- */
-uint32_t CMPNonFungibleTokensDB::GetPropertyIdFromKey(const std::string& key)
+static std::string createNFTKey(uint32_t propertyId, NonFungibleStorage type = NonFungibleStorage::None, int64_t tokenIdStart = 0, int64_t tokenIdEnd = 0)
+{
+    return strprintf("%010d_%u_%020d-%020d", propertyId, static_cast<StorageType>(type), tokenIdStart, tokenIdEnd);
+}
+
+static std::tuple<uint32_t, NonFungibleStorage, int64_t, int64_t> parseNFTKey(const std::string& key)
 {
     std::vector<std::string> vPropertyId;
     boost::split(vPropertyId, key, boost::is_any_of("_"), boost::token_compress_on);
     assert(vPropertyId.size() == 3); // if size !=3 then we cannot trust the data in the DB and we must halt
-    return boost::lexical_cast<uint32_t>(vPropertyId[0]);
+
+    std::vector<std::string> vRanges;
+    boost::split(vRanges, vPropertyId[2], boost::is_any_of("-"), boost::token_compress_on);
+    assert(vRanges.size() == 2); // if size !=2 then we cannot trust the data in the DB and we must halt
+
+    return std::make_tuple(boost::lexical_cast<uint32_t>(vPropertyId[0]),
+                           static_cast<NonFungibleStorage>(boost::lexical_cast<uint32_t>(vPropertyId[1])),
+                           boost::lexical_cast<int64_t>(vRanges[0]),
+                           boost::lexical_cast<int64_t>(vRanges[1]));
 }
 
-/* Extracts the storage type from a DB key
- */
-NonFungibleStorage CMPNonFungibleTokensDB::GetTypeFromKey(const std::string& key)
+template<int I, int J, class... T>
+auto to_pair(std::tuple<T...>& t) -> decltype(std::make_pair(std::get<I>(t), std::get<J>(t)))
 {
-    std::vector<std::string> vPropertyId;
-    boost::split(vPropertyId, key, boost::is_any_of("_"), boost::token_compress_on);
-    assert(vPropertyId.size() == 3); // if size !=3 then we cannot trust the data in the DB and we must halt
-    auto ch = boost::lexical_cast<uint32_t>(vPropertyId[1]);
-    return static_cast<NonFungibleStorage>(ch);
-}
-
-/* Extracts the range from a DB key
- */
-void CMPNonFungibleTokensDB::GetRangeFromKey(const std::string& key, int64_t *start, int64_t *end)
-{
-   std::vector<std::string> vPropertyId;
-   boost::split(vPropertyId, key, boost::is_any_of("_"), boost::token_compress_on);
-   assert(vPropertyId.size() == 3); // if size !=2 then we cannot trust the data in the DB and we must halt
-
-   std::vector<std::string> vRanges;
-   boost::split(vRanges, vPropertyId[2], boost::is_any_of("-"), boost::token_compress_on);
-   assert(vRanges.size() == 2); // if size !=2 then we cannot trust the data in the DB and we must halt
-
-   *start = boost::lexical_cast<int64_t>(vRanges[0]);
-   *end = boost::lexical_cast<int64_t>(vRanges[1]);
+    return std::make_pair(std::get<I>(t), std::get<J>(t));
 }
 
 /* Gets the range a non-fungible token is in
@@ -61,51 +54,39 @@ void CMPNonFungibleTokensDB::GetRangeFromKey(const std::string& key, int64_t *st
 std::pair<int64_t,int64_t> CMPNonFungibleTokensDB::GetRange(const uint32_t &propertyId, const int64_t &tokenId, const NonFungibleStorage type)
 {
     assert(pdb);
-    leveldb::Iterator* it = NewIterator();
+    CDBaseIterator it{NewIterator(), createNFTKey(propertyId, type)};
 
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
-        if (propertyId != GetPropertyIdFromKey(it->key().ToString()) ||
-                GetTypeFromKey(it->key().ToString()) != type) continue;
-
-        int64_t start, end;
-        GetRangeFromKey(it->key().ToString(), &start, &end);
-        if (tokenId >= start && tokenId <= end) {
-            delete it;
-            return std::make_pair(start, end);
+    for (; it; ++it) {
+        auto nkey = parseNFTKey(it->key().ToString());
+        if (to_pair<0, 1>(nkey) != std::make_pair(propertyId, type)) {
+            break;
+        }
+        if (tokenId >= std::get<2>(nkey) && tokenId <= std::get<3>(nkey)) {
+            return to_pair<2, 3>(nkey);
         }
     }
 
-    delete it;
-    return std::make_pair(0,0); // token not found, return zero'd range
+    return std::make_pair(0, 0); // token not found, return zero'd range
 }
 
 /* Checks if the range of tokens is contiguous (ie owned by a single address)
  */
-bool CMPNonFungibleTokensDB::IsRangeContiguous(const uint32_t &propertyId, const int64_t &rangeStart, const int64_t &rangeEnd)
+std::string CMPNonFungibleTokensDB::GetNonFungibleTokenValueInRange(const uint32_t &propertyId, const int64_t &rangeStart, const int64_t &rangeEnd)
 {
-
     assert(pdb);
-    leveldb::Iterator* it = NewIterator();
-
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
-        if (propertyId != GetPropertyIdFromKey(it->key().ToString()) ||
-                GetTypeFromKey(it->key().ToString()) != NonFungibleStorage::RangeIndex) continue;
-
-        int64_t start, end;
-        GetRangeFromKey(it->key().ToString(), &start, &end);
-
-        if (rangeStart >= start && rangeStart <= end) {
-            delete it;
-            if (rangeEnd >= rangeStart && rangeEnd <= end) {
-                return true;
-            } else {
-                return false; // the start ID falls within this range but the end ID does not - not owned by a single address
-            }
+    auto rangeIndex = NonFungibleStorage::RangeIndex;
+    CDBaseIterator it{NewIterator(), createNFTKey(propertyId, rangeIndex)};
+    for (; it; ++it) {
+        auto nkey = parseNFTKey(it->key().ToString());
+        if (to_pair<0, 1>(nkey) != std::make_pair(propertyId, rangeIndex)) {
+            break;
+        }
+        if (rangeStart >= std::get<2>(nkey) && rangeEnd <= std::get<3>(nkey)) {
+            return it->value().ToString();
         }
     }
 
-    delete it;
-    return false; // range doesn't exist
+    return {}; // range doesn't exist
 }
 
 /* Moves a range of tokens (returns false if not able to move)
@@ -117,10 +98,10 @@ bool CMPNonFungibleTokensDB::MoveNonFungibleTokens(const uint32_t &propertyId, c
     assert(pdb);
 
     // check that 'from' owns both the start and end token and that the range is contiguous (owns the entire range)
-    std::string startOwner = GetNonFungibleTokenOwner(propertyId, tokenIdStart);
-    std::string endOwner = GetNonFungibleTokenOwner(propertyId, tokenIdEnd);
-    bool contiguous = IsRangeContiguous(propertyId, tokenIdStart, tokenIdEnd);
-    if (startOwner != from || endOwner != from || !contiguous) return false;
+    std::string startOwner = GetNonFungibleTokenValueInRange(propertyId, tokenIdStart, tokenIdEnd);
+    if (startOwner != from) {
+        return false;
+    }
 
     // are we moving the complete range from 'from'?
     // we know the range is contiguous (above) so we can use a single GetRange call
@@ -133,8 +114,8 @@ bool CMPNonFungibleTokensDB::MoveNonFungibleTokens(const uint32_t &propertyId, c
     // does 'to' have adjacent ranges that need to be merged?
     bool bToAdjacentRangeBefore = false;
     bool bToAdjacentRangeAfter = false;
-    std::string rangeBelowOwner = GetNonFungibleTokenOwner(propertyId, tokenIdStart-1);
-    std::string rangeAfterOwner = GetNonFungibleTokenOwner(propertyId, tokenIdEnd+1);
+    std::string rangeBelowOwner = GetNonFungibleTokenValue(propertyId, tokenIdStart - 1, NonFungibleStorage::RangeIndex);
+    std::string rangeAfterOwner = GetNonFungibleTokenValue(propertyId, tokenIdEnd + 1, NonFungibleStorage::RangeIndex);
     if (rangeBelowOwner == to) {
         bToAdjacentRangeBefore = true;
     }
@@ -200,8 +181,8 @@ bool CMPNonFungibleTokensDB::ChangeNonFungibleTokenData(const uint32_t &property
     // If we have previous ranges rewrite if needed
     if (!ranges.empty()) {
         // Get data on before and after ranges we are writing over
-        auto beforeData = GetNonFungibleTokenData(propertyId, ranges.begin()->first, type);
-        auto afterData = GetNonFungibleTokenData(propertyId, ranges.rbegin()->first, type);
+        auto beforeData = GetNonFungibleTokenValue(propertyId, ranges.begin()->first, type);
+        auto afterData = GetNonFungibleTokenValue(propertyId, ranges.rbegin()->first, type);
 
         // Delete all ranges
         for (const auto& tokenRange : ranges) {
@@ -230,19 +211,16 @@ int64_t CMPNonFungibleTokensDB::GetHighestRangeEnd(const uint32_t &propertyId)
     assert(pdb);
 
     int64_t tokenCount = 0;
-    leveldb::Iterator* it = NewIterator();
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
-        if (propertyId != GetPropertyIdFromKey(it->key().ToString()) ||
-                GetTypeFromKey(it->key().ToString()) != NonFungibleStorage::RangeIndex) continue;
+    auto rangeIndex = NonFungibleStorage::RangeIndex;
+    CDBaseIterator it{NewIterator(), createNFTKey(propertyId, rangeIndex)};
 
-        int64_t start, end;
-        GetRangeFromKey(it->key().ToString(), &start, &end);
-
-        if (end > tokenCount) {
-            tokenCount = end;
+    for (; it; ++it) {
+        auto nkey = parseNFTKey(it->key().ToString());
+        if (to_pair<0, 1>(nkey) != std::make_pair(propertyId, rangeIndex)) {
+            break;
         }
+        tokenCount = std::max(tokenCount, std::max(std::get<2>(nkey), std::get<3>(nkey)));
     }
-    delete it;
     return tokenCount;
 }
 
@@ -251,7 +229,7 @@ int64_t CMPNonFungibleTokensDB::GetHighestRangeEnd(const uint32_t &propertyId)
 void CMPNonFungibleTokensDB::DeleteRange(const uint32_t &propertyId, const int64_t &tokenIdStart, const int64_t &tokenIdEnd, const NonFungibleStorage type)
 {
     assert(pdb);
-    const std::string key = strprintf("%010d_%u_%020d-%020d", propertyId, static_cast<StorageType>(type), tokenIdStart, tokenIdEnd);
+    std::string key = createNFTKey(propertyId, type, tokenIdStart, tokenIdEnd);
     pdb->Delete(leveldb::WriteOptions(), key);
 
     if (msc_debug_nftdb) PrintToLog("%s():%s, line %d, file: %s\n", __FUNCTION__, key, __LINE__, __FILE__);
@@ -263,7 +241,7 @@ void CMPNonFungibleTokensDB::AddRange(const uint32_t &propertyId, const int64_t 
 {
     assert(pdb);
 
-    const std::string key = strprintf("%010d_%u_%020d-%020d", propertyId, static_cast<StorageType>(type), tokenIdStart, tokenIdEnd);
+    std::string key = createNFTKey(propertyId, type, tokenIdStart, tokenIdEnd);
     leveldb::Status status = pdb->Put(writeoptions, key, info);
     ++nWritten;
 
@@ -276,12 +254,16 @@ std::pair<int64_t,int64_t> CMPNonFungibleTokensDB::CreateNonFungibleTokens(const
 {
     if (msc_debug_nftdb) PrintToLog("%s(): %d:%d:%s, line %d, file: %s\n", __FUNCTION__, propertyId, amount, owner, __LINE__, __FILE__);
 
+    // negative amount will result in incorrect work
+    if (amount < 0) {
+        return {};
+    }
+
     int64_t highestId = GetHighestRangeEnd(propertyId);
     int64_t newTokenStartId = highestId + 1;
     int64_t newTokenEndId = 0;
 
-    if ( ((amount > 0) && (highestId > (std::numeric_limits<int64_t>::max()-amount))) ||   /* overflow */
-         ((amount < 0) && (highestId < (std::numeric_limits<int64_t>::min()-amount))) ) {  /* underflow */
+    if ( (highestId > (std::numeric_limits<int64_t>::max() - amount))) { /* overflow */
         newTokenEndId = std::numeric_limits<int64_t>::max();
     } else {
         newTokenEndId = highestId + amount;
@@ -291,7 +273,7 @@ std::pair<int64_t,int64_t> CMPNonFungibleTokensDB::CreateNonFungibleTokens(const
 
     std::pair<int64_t,int64_t> newRange = std::make_pair(newTokenStartId, newTokenEndId);
 
-    std::string highestRangeOwner = GetNonFungibleTokenOwner(propertyId, highestId);
+    std::string highestRangeOwner = GetNonFungibleTokenValue(propertyId, highestId, NonFungibleStorage::RangeIndex);
     if (highestRangeOwner == owner) {
         std::pair<int64_t,int64_t> oldRange = GetRange(propertyId, highestId, NonFungibleStorage::RangeIndex);
         DeleteRange(propertyId, oldRange.first, oldRange.second, NonFungibleStorage::RangeIndex);
@@ -303,54 +285,24 @@ std::pair<int64_t,int64_t> CMPNonFungibleTokensDB::CreateNonFungibleTokens(const
     return newRange;
 }
 
-/* Gets the owner of a range of non-fungible tokens
- */
-std::string CMPNonFungibleTokensDB::GetNonFungibleTokenOwner(const uint32_t &propertyId, const int64_t &tokenId)
-{
-    assert(pdb);
-    leveldb::Iterator* it = NewIterator();
-
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
-        if (propertyId != GetPropertyIdFromKey(it->key().ToString()) ||
-                GetTypeFromKey(it->key().ToString()) != NonFungibleStorage::RangeIndex) continue;
-
-        int64_t start, end;
-        GetRangeFromKey(it->key().ToString(), &start, &end);
-
-        if (tokenId >= start && tokenId <= end) {
-            std::string retval = it->value().ToString();
-            delete it;
-            return retval;
-        }
-    }
-
-    delete it;
-    return ""; // not found
-}
-
 /* Gets the info set in a non-fungible token
  */
-std::string CMPNonFungibleTokensDB::GetNonFungibleTokenData(const uint32_t &propertyId, const int64_t &tokenId, const NonFungibleStorage type)
+std::string CMPNonFungibleTokensDB::GetNonFungibleTokenValue(const uint32_t &propertyId, const int64_t &tokenId, const NonFungibleStorage type)
 {
     assert(pdb);
-    leveldb::Iterator* it = NewIterator();
+    CDBaseIterator it{NewIterator(), createNFTKey(propertyId, type)};
 
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
-        if (propertyId != GetPropertyIdFromKey(it->key().ToString()) ||
-                GetTypeFromKey(it->key().ToString()) != type) continue;
-
-        int64_t start, end;
-        GetRangeFromKey(it->key().ToString(), &start, &end);
-
-        if (tokenId >= start && tokenId <= end) {
-            std::string retval = it->value().ToString();
-            delete it;
-            return retval;
+    for (; it; ++it) {
+        auto nkey = parseNFTKey(it->key().ToString());
+        if (to_pair<0, 1>(nkey) != std::make_pair(propertyId, type)) {
+            break;
+        }
+        if (tokenId >= std::get<2>(nkey) && tokenId <= std::get<3>(nkey)) {
+            return it->value().ToString();
         }
     }
 
-    delete it;
-    return ""; // not found
+    return {}; // not found
 }
 
 /* Gets the ranges of non-fungible tokens owned by an address
@@ -359,45 +311,44 @@ std::map<uint32_t, std::vector<std::pair<int64_t, int64_t>>> CMPNonFungibleToken
 {
     std::map<uint32_t, std::vector<std::pair<int64_t, int64_t>>> uniqueMap;
     assert(pdb);
-    leveldb::Iterator* it = NewIterator();
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+    auto rangeIndex = NonFungibleStorage::RangeIndex;
+    CDBaseIterator it{NewIterator(), createNFTKey(propertyId, rangeIndex)};
+
+    for (; it; ++it) {
+        auto nkey = parseNFTKey(it->key().ToString());
+        if (propertyId != 0 && to_pair<0, 1>(nkey) != std::make_pair(propertyId, rangeIndex)) {
+            break;
+        }
+        if (std::get<1>(nkey) != rangeIndex) {
+            continue;
+        }
         std::string value = it->value().ToString();
         if (value != address) continue;
 
-        const auto id = GetPropertyIdFromKey(it->key().ToString());
-        if ((propertyId != 0 && propertyId != id) ||
-            GetTypeFromKey(it->key().ToString()) != NonFungibleStorage::RangeIndex) continue;
-
-        int64_t start, end;
-        GetRangeFromKey(it->key().ToString(), &start, &end);
-
-        uniqueMap[id].emplace_back(start, end);
+        uniqueMap[std::get<0>(nkey)].emplace_back(std::get<2>(nkey), std::get<3>(nkey));
     }
-    delete it;
+
     return uniqueMap;
 }
 
 /* Gets the ranges of non-fungible tokens for a property
  */
-std::vector<std::pair<std::string,std::pair<int64_t,int64_t> > > CMPNonFungibleTokensDB::GetNonFungibleTokenRanges(const uint32_t &propertyId)
+std::vector<std::pair<std::string,std::pair<int64_t,int64_t>>> CMPNonFungibleTokensDB::GetNonFungibleTokenRanges(const uint32_t &propertyId)
 {
-    std::vector<std::pair<std::string,std::pair<int64_t,int64_t> > > rangeMap;
+    std::vector<std::pair<std::string,std::pair<int64_t,int64_t>>> rangeMap;
 
     assert(pdb);
+    auto rangeIndex = NonFungibleStorage::RangeIndex;
+    CDBaseIterator it{NewIterator(), createNFTKey(propertyId, rangeIndex)};
 
-    leveldb::Iterator* it = NewIterator();
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
-        if (propertyId != GetPropertyIdFromKey(it->key().ToString()) ||
-                GetTypeFromKey(it->key().ToString()) != NonFungibleStorage::RangeIndex) continue;
-
-        std::string address = it->value().ToString();
-        int64_t start, end;
-        GetRangeFromKey(it->key().ToString(), &start, &end);
-
-        rangeMap.push_back(std::make_pair(address,std::make_pair(start, end)));
+    for (; it; ++it) {
+        auto nkey = parseNFTKey(it->key().ToString());
+        if (to_pair<0, 1>(nkey) != std::make_pair(propertyId, rangeIndex)) {
+            break;
+        }
+        rangeMap.emplace_back(it->value().ToString(), to_pair<2, 3>(nkey));
     }
 
-    delete it;
     return rangeMap;
 }
 
@@ -405,28 +356,25 @@ void CMPNonFungibleTokensDB::SanityCheck()
 {
     assert(pdb);
 
-    std::string result = "";
+    std::string result;
 
     std::map<uint32_t,int64_t> totals;
 
-    leveldb::Iterator* it = NewIterator();
-    for (it->SeekToFirst(); it->Valid(); it->Next()) {
-        if (GetTypeFromKey(it->key().ToString()) != NonFungibleStorage::RangeIndex) continue;
-        uint32_t propertyId = GetPropertyIdFromKey(it->key().ToString());
-        int64_t start, end;
-        GetRangeFromKey(it->key().ToString(), &start, &end);
-        if (end > totals[propertyId]) {
-            totals[propertyId] = end;
-        }
+    CDBaseIterator it{NewIterator()};
+    for (; it; ++it) {
+        auto nkey = parseNFTKey(it->key().ToString());
+        if (std::get<1>(nkey) != NonFungibleStorage::RangeIndex) continue;
+
+        auto& prop = totals[std::get<0>(nkey)];
+        prop = std::max(prop, std::get<3>(nkey));
     }
-    delete it;
 
     for (std::map<uint32_t,int64_t>::iterator it = totals.begin(); it != totals.end(); ++it) {
         if (mastercore::getTotalTokens(it->first) != it->second) {
             std::string abortMsg = strprintf("Failed sanity check on property %d (%d != %d)\n", it->first, mastercore::getTotalTokens(it->first), it->second);
             AbortNode(abortMsg);
-        } else {
-            result = result + strprintf("%d:%d=%d,", it->first, mastercore::getTotalTokens(it->first), it->second);
+        } else if (msc_debug_nftdb) {
+            result += strprintf("%d:%d=%d,", it->first, mastercore::getTotalTokens(it->first), it->second);
         }
     }
 
@@ -441,17 +389,14 @@ void CMPNonFungibleTokensDB::printStats()
 void CMPNonFungibleTokensDB::printAll()
 {
     int count = 0;
-    leveldb::Slice skey, svalue;
-    leveldb::Iterator* it = NewIterator();
+    CDBaseIterator it{NewIterator()};
 
-    for(it->SeekToFirst(); it->Valid(); it->Next()) {
-        skey = it->key();
-        svalue = it->value();
+    for(; it; ++it) {
+        auto skey = it->key().ToString();
+        auto svalue = it->value().ToString();
         ++count;
-        PrintToConsole("entry #%8d= %s:%s\n", count, skey.ToString(), svalue.ToString());
+        PrintToConsole("entry #%8d= %s:%s\n", count, skey, svalue);
 //      PrintToLog("entry #%8d= %s:%s\n", count, skey.ToString(), svalue.ToString());
     }
-
-    delete it;
 }
 
