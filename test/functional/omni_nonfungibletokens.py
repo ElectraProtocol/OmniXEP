@@ -670,7 +670,7 @@ class OmniNonFungibleTokensTest(XepTestFramework):
                 unspent = utxos
                 break
         rawtx = self.nodes[1].createrawtransaction([{"txid":unspent['txid'], "vout":unspent['vout']}], [{unspent['address']:unspent['amount'] - Decimal('0.00001')}])
-        payload = self.nodes[1].omni_createpayload_setnonfungibledata(property_id, 102, 102, True, "Test non-issuer update")
+        payload = self.nodes[1].omni_createpayload_setnonfungibledata(property_id, 102, 102, False, "Test non-issuer update")
         rawtx = self.nodes[1].omni_createrawtx_opreturn(rawtx, payload)
         signed_rawtx = self.nodes[1].signrawtransactionwithwallet(rawtx)
         txid = self.nodes[1].sendrawtransaction(signed_rawtx['hex'])
@@ -682,7 +682,7 @@ class OmniNonFungibleTokensTest(XepTestFramework):
 
         # Check issuer data set by non-issuer
         result = self.nodes[1].omni_getnonfungibletokendata(property_id, 102)
-        assert_equal(result[0]['issuerdata'], 'Test non-issuer update')
+        assert_equal(result[0]['holderdata'], 'Test non-issuer update')
 
         # Fund activation address
         activation_address = self.nodes[1].getnewaddress("", "legacy")
@@ -719,7 +719,7 @@ class OmniNonFungibleTokensTest(XepTestFramework):
 
         # Check issuer data same as before by non-issuer
         result = self.nodes[1].omni_getnonfungibletokendata(property_id, 102)
-        assert_equal(result[0]['issuerdata'], 'Test non-issuer update')
+        assert_equal(result[0]['holderdata'], 'Test non-issuer update')
 
 if __name__ == '__main__':
     OmniNonFungibleTokensTest().main()

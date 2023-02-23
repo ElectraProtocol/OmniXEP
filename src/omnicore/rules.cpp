@@ -276,7 +276,7 @@ CRegTestConsensusParams::CRegTestConsensusParams()
     MSC_NONFUNGIBLE_BLOCK = 0;
     MSC_DELEGATED_ISSUANCE_BLOCK = 0;
     MSC_SEND_TO_MANY_BLOCK = 0;
-    MSC_NFT_BLOCK = 999999;
+    MSC_NFT_BLOCK = 0;
     // Other feature activations:
     GRANTEFFECTS_FEATURE_BLOCK = 999999;
     DEXMATH_FEATURE_BLOCK = 999999;
