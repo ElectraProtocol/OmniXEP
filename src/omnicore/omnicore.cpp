@@ -1689,6 +1689,7 @@ void RewindDBsAndState(int nHeight, int nBlockPrev = 0, bool fInitialParse = fal
         pDbStoList->deleteAboveBlock(nHeight);
         pDbFeeCache->RollBackCache(nHeight);
         pDbFeeHistory->RollBackHistory(nHeight);
+        pDbNFT->RollBackAboveBlock(nHeight);
         reorgRecoveryMaxHeight = 0;
 
         nWaterlineBlock = ConsensusParams().GENESIS_BLOCK - 1;
@@ -2159,7 +2160,8 @@ int mastercore_handler_block_end(int nBlockNow, CBlockIndex const * pBlockIndex,
         }
 
         // request nftdb sanity check
-        pDbNFT->SanityCheck();
+        bool sanityCheck = true;
+        pDbNFT->WriteBlockCache(nBlockNow, sanityCheck);
 
         // request checkpoint verification
         checkpointValid = VerifyCheckpoint(nBlockNow, pBlockIndex->GetBlockHash());

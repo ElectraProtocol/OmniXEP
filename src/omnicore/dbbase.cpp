@@ -1,5 +1,5 @@
-#include <omnicore/dbbase.h>
 
+#include <omnicore/dbbase.h>
 #include <omnicore/log.h>
 
 #include <fs.h>
@@ -36,7 +36,7 @@ void CDBBase::Clear()
     CDBaseIterator it{NewIterator()};
 
     for (; it; ++it) {
-        batch.Delete(it->key());
+        batch.Delete(it.Key());
         ++n;
     }
 

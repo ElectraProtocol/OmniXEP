@@ -2,13 +2,49 @@
 #define XEP_OMNICORE_DBBASE_H
 
 #include <algorithm>
+#include <cstdint>
+#include <iterator>
 #include <leveldb/db.h>
 
+#include <clientversion.h>
 #include <fs.h>
+#include <streams.h>
 
 #include <assert.h>
 #include <memory>
 #include <stddef.h>
+
+template<typename T>
+bool StringToValue(std::string&& s, T& value)
+{
+    try {
+        CDataStream ssValue(s.data(), s.data() + s.size(), SER_DISK, CLIENT_VERSION);
+        ssValue >> value;
+    } catch (const std::exception&) {
+        return false;
+    }
+    return true;
+}
+
+inline bool StringToValue(std::string&& s, std::string& value)
+{
+    value = std::move(s);
+    return true;
+}
+
+template<typename T>
+std::string ValueToString(const T& value)
+{
+    std::vector<uint8_t> v;
+    CVectorWriter writer(SER_DISK, CLIENT_VERSION, v, 0);
+    writer << value;
+    return {v.begin(), v.end()};
+}
+
+inline std::string ValueToString(const std::string& value)
+{
+    return value;
+}
 
 /** Base class for LevelDB based storage.
  */
@@ -71,6 +107,38 @@ protected:
         return pdb->NewIterator(iteroptions);
     }
 
+    template<typename K, typename V>
+    bool Write(const K& key, const V& value)
+    {
+        static_assert(sizeof(K::prefix) == 1, "Prefix needs to be 1 byte");
+        CDataStream ssKey(SER_DISK, CLIENT_VERSION, K::prefix, key);
+        leveldb::Slice slKey(ssKey.data(), ssKey.size());
+        assert(pdb);
+        return pdb->Put(writeoptions, slKey, ValueToString(value)).ok();
+    }
+
+    template<typename K, typename V>
+    bool Read(const K& key, V& value) const
+    {
+        static_assert(sizeof(K::prefix) == 1, "Prefix needs to be 1 byte");
+        CDataStream ssKey(SER_DISK, CLIENT_VERSION, K::prefix, key);
+        leveldb::Slice slKey(ssKey.data(), ssKey.size());
+        std::string strValue;
+        assert(pdb);
+        return pdb->Get(readoptions, slKey, &strValue).ok()
+            && StringToValue(std::move(strValue), value);
+    }
+
+    template<typename K>
+    bool Delete(const K& key)
+    {
+        static_assert(sizeof(K::prefix) == 1, "Prefix needs to be 1 byte");
+        CDataStream ssKey(SER_DISK, CLIENT_VERSION, K::prefix, key);
+        leveldb::Slice slKey(ssKey.data(), ssKey.size());
+        assert(pdb);
+        return pdb->Delete(leveldb::WriteOptions(), slKey).ok();
+    }
+
     /**
      * Opens or creates a LevelDB based database.
      *
@@ -95,9 +163,36 @@ public:
     void Clear();
 };
 
+template<typename T>
+std::string KeyToString(const T& key)
+{
+    std::vector<uint8_t> v;
+    static_assert(sizeof(T::prefix) == 1, "Prefix needs to be 1 byte");
+    CVectorWriter writer(SER_DISK, CLIENT_VERSION, v, 0);
+    writer << T::prefix << key;
+    return {v.begin(), v.end()};
+}
+
+template<typename T>
+bool StringToKey(const std::string& s, T& key)
+{
+    auto prefix = T::prefix;
+    static_assert(sizeof(T::prefix) == 1, "Prefix needs to be 1 byte");
+    try {
+        std::vector<uint8_t> v{s.begin(), s.end()};
+        VectorReader reader(SER_DISK, CLIENT_VERSION, v, 0);
+        reader >> prefix >> key;
+    } catch (const std::exception&) {
+        return false;
+    }
+    return prefix == T::prefix;
+}
+
 class CDBaseIterator
 {
 private:
+    const uint8_t prefix = 0;
+    const bool use_prefix = false;
     std::unique_ptr<leveldb::Iterator> it;
 
 public:
@@ -107,35 +202,81 @@ public:
         first.empty() ? it->SeekToFirst() : it->Seek(first);
     }
 
-    CDBaseIterator& operator=(CDBaseIterator&& i)
+    template<typename T>
+    explicit CDBaseIterator(leveldb::Iterator* i, const T& key) : prefix(T::prefix), use_prefix(true), it(i)
     {
-        it = std::move(i.it);
         assert(it);
-        return *this;
+        static_assert(sizeof(T::prefix) == 1, "Prefix needs to be 1 byte");
+        CDataStream ssKey(SER_DISK, CLIENT_VERSION, prefix, key);
+        it->Seek({ssKey.data(), ssKey.size()});
     }
+
+    CDBaseIterator(CDBaseIterator&&) = default;
 
     CDBaseIterator& operator++()
     {
-        assert(it->Valid());
+        assert(Valid());
         it->Next();
         return *this;
     }
 
     CDBaseIterator& operator--()
     {
-        assert(it->Valid());
+        assert(Valid());
         it->Prev();
         return *this;
     }
 
     operator bool() const
     {
-        return it->Valid();
+        return Valid();
     }
 
-    leveldb::Iterator* operator->()
+    bool Valid() const
     {
-        return it.get();
+        return it->Valid() && (!use_prefix || it->key()[0] == prefix);
+    }
+
+    leveldb::Slice Key() const
+    {
+        assert(Valid());
+        return it->key();
+    }
+
+    template<typename T>
+    T Key() const
+    {
+        assert(Valid());
+        T key;
+        try {
+            uint8_t prefix;
+            auto slKey = it->key();
+            CDataStream ssKey(slKey.data(), slKey.data() + slKey.size(), SER_DISK, CLIENT_VERSION);
+            ssKey >> prefix >> key;
+        } catch (const std::exception&) {
+            return {};
+        }
+        return key;
+    }
+
+    leveldb::Slice Value() const
+    {
+        assert(Valid());
+        return it->value();
+    }
+
+    template<typename T>
+    bool Value(T&& value) const
+    {
+        assert(Valid());
+        try {
+            auto slValue = it->value();
+            CDataStream ssValue(slValue.data(), slValue.data() + slValue.size(), SER_DISK, CLIENT_VERSION);
+            ssValue >> value;
+        } catch (const std::exception&) {
+            return false;
+        }
+        return true;
     }
 };
 

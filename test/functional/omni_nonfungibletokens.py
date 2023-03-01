@@ -674,7 +674,7 @@ class OmniNonFungibleTokensTest(XepTestFramework):
         rawtx = self.nodes[1].omni_createrawtx_opreturn(rawtx, payload)
         signed_rawtx = self.nodes[1].signrawtransactionwithwallet(rawtx)
         txid = self.nodes[1].sendrawtransaction(signed_rawtx['hex'])
-        self.nodes[1].generate(1)
+        blockhash = self.nodes[1].generate(1)[0]
 
         # Check transaction is valid
         result = self.nodes[1].omni_gettransaction(txid)
@@ -720,6 +720,15 @@ class OmniNonFungibleTokensTest(XepTestFramework):
         # Check issuer data same as before by non-issuer
         result = self.nodes[1].omni_getnonfungibletokendata(property_id, 102)
         assert_equal(result[0]['holderdata'], 'Test non-issuer update')
+
+        # reorg
+        self.nodes[0].invalidateblock(blockhash)
+        self.nodes[0].clearmempool()
+        self.nodes[0].generate(15)
+        self.sync_all()
+
+        result = self.nodes[1].omni_getnonfungibletokendata(property_id, 102)
+        assert_equal(result[0]['holderdata'], 'New holderdata')
 
 if __name__ == '__main__':
     OmniNonFungibleTokensTest().main()

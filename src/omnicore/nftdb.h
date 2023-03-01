@@ -1,12 +1,14 @@
 #ifndef XEP_OMNICORE_NFTDB_H
 #define XEP_OMNICORE_NFTDB_H
 
+#include <cstdint>
 #include <omnicore/dbbase.h>
 
 #include <omnicore/log.h>
 #include <omnicore/persistence.h>
 
 #include <stdint.h>
+#include <unordered_map>
 #include <boost/filesystem.hpp>
 
 enum class NonFungibleStorage : unsigned char
@@ -18,10 +20,24 @@ enum class NonFungibleStorage : unsigned char
     HolderData = 'H',
 };
 
+struct CRollbackData {
+    enum RollbackType {
+        DELETE_KEY = 0,
+        PERSIST_KEY
+    };
+    uint8_t type;
+    std::string data;
+};
+
 /** LevelDB based storage for non-fungible tokens, with uid range (propertyid_tokenidstart-tokenidend) as key and token owner (address) as value.
  */
 class CMPNonFungibleTokensDB : public CDBBase
 {
+    std::unordered_map<std::string, CRollbackData> blockData;
+    // Sanity checks the token counts
+    void SanityCheck();
+    // Store writes to block in cache to be used in rollbacks
+    void StoreBlockCache(const std::string& key);
 
 public:
     CMPNonFungibleTokensDB(const boost::filesystem::path& path, bool fWipe)
@@ -60,8 +76,10 @@ public:
     std::map<uint32_t, std::vector<std::pair<int64_t, int64_t>>> GetAddressNonFungibleTokens(const uint32_t &propertyId, const std::string &address);
     // Gets the non-fungible token ranges for a property ID
     std::vector<std::pair<std::string,std::pair<int64_t,int64_t>>> GetNonFungibleTokenRanges(const uint32_t &propertyId);
-    // Sanity checks the token counts
-    void SanityCheck();
+    // Write block cache
+    void WriteBlockCache(int height, bool sanityCheck = false);
+    // Rollback records prior given height
+    void RollBackAboveBlock(int height);
 };
 
 namespace mastercore
