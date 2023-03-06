@@ -173,8 +173,7 @@ bool CMPTradeList::getMatchingTrades(const uint256& txid, uint32_t propertyId, U
         UniValue trade(UniValue::VOBJ);
         trade.pushKV("txid", matchTxid);
         trade.pushKV("block", blockNum);
-        CBlockIndex* pBlockIndex = ::ChainActive()[blockNum];
-        if (pBlockIndex != nullptr) {
+        if (auto pBlockIndex = WITH_LOCK(cs_main, return ::ChainActive()[blockNum])) {
             trade.pushKV("blocktime", pBlockIndex->GetBlockTime());
         }
         if (prop1 == propertyId) {
@@ -302,8 +301,7 @@ void CMPTradeList::getTradesForPair(uint32_t propertyIdSideA, uint32_t propertyI
 
         UniValue trade(UniValue::VOBJ);
         trade.pushKV("block", blockNum);
-        CBlockIndex* pBlockIndex = ::ChainActive()[blockNum];
-        if (pBlockIndex != nullptr) {
+        if (auto pBlockIndex = WITH_LOCK(cs_main, return ::ChainActive()[blockNum])) {
             trade.pushKV("blocktime", pBlockIndex->GetBlockTime());
         }
         trade.pushKV("unitprice", unitPriceStr);

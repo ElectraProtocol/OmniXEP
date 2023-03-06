@@ -2009,6 +2009,12 @@ static UniValue omni_gettradehistoryforaddress(const JSONRPCRequest& request)
         pDbTradeList->getTradesForAddress(address, vecTransactions, propertyId);
     }
 
+#ifdef ENABLE_WALLET
+    if (wallet && !vecTransactions.empty()) {
+        wallet->BlockUntilSyncedToCurrentChain();
+    }
+#endif
+
     // Populate the address trade history into JSON objects until we have processed count transactions
     UniValue response(UniValue::VARR);
     uint32_t processed = 0;
@@ -2335,6 +2341,12 @@ static UniValue omni_gettransaction(const JSONRPCRequest& request)
 
     uint256 hash = ParseHashV(request.params[0], "txid");
 
+#ifdef ENABLE_WALLET
+    if (wallet) {
+        wallet->BlockUntilSyncedToCurrentChain();
+    }
+#endif
+
     UniValue txobj(UniValue::VOBJ);
     int populateResult = populateRPCTransactionObject(hash, txobj, "", false, "", pWallet.get());
     if (populateResult != 0) PopulateFailure(populateResult);
@@ -2399,6 +2411,10 @@ static UniValue omni_listtransactions(const JSONRPCRequest& request)
     int64_t nEndBlock = 999999999;
     if (request.params.size() > 4) nEndBlock = request.params[4].get_int64();
     if (nEndBlock < 0) throw JSONRPCError(RPC_INVALID_PARAMETER, "Negative end block");
+
+    if (wallet) {
+        wallet->BlockUntilSyncedToCurrentChain();
+    }
 
     // obtain a sorted list of Omni layer wallet transactions (including STO receipts and pending)
     std::map<std::string,uint256> walletTransactions = FetchWalletOmniTransactions(*pWallet, nFrom+nCount, nStartBlock, nEndBlock);
@@ -2693,6 +2709,12 @@ static UniValue omni_getsto(const JSONRPCRequest& request)
     std::string filterAddress;
     if (request.params.size() > 1) filterAddress = ParseAddressOrWildcard(request.params[1]);
 
+#ifdef ENABLE_WALLET
+    if (wallet) {
+        wallet->BlockUntilSyncedToCurrentChain();
+    }
+#endif
+
     UniValue txobj(UniValue::VOBJ);
     int populateResult = populateRPCTransactionObject(hash, txobj, "", true, filterAddress, pWallet.get());
     if (populateResult != 0) PopulateFailure(populateResult);
@@ -2759,6 +2781,12 @@ static UniValue omni_gettrade(const JSONRPCRequest& request)
     }.Check(request);
 
     uint256 hash = ParseHashV(request.params[0], "txid");
+
+#ifdef ENABLE_WALLET
+    if (wallet) {
+        wallet->BlockUntilSyncedToCurrentChain();
+    }
+#endif
 
     UniValue txobj(UniValue::VOBJ);
     int populateResult = populateRPCTransactionObject(hash, txobj, "", true, "", pWallet.get());

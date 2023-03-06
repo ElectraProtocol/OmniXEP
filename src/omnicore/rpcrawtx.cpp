@@ -15,6 +15,9 @@
 #include <uint256.h>
 #include <util/strencodings.h>
 #include <wallet/rpcwallet.h>
+#ifdef ENABLE_WALLET
+#include <wallet/wallet.h>
+#endif
 
 #include <univalue.h>
 
@@ -93,6 +96,12 @@ static UniValue omni_decodetransaction(const JSONRPCRequest& request)
     if (request.params.size() > 2) {
         blockHeight = request.params[2].get_int();
     }
+
+#ifdef ENABLE_WALLET
+    if (wallet) {
+        wallet->BlockUntilSyncedToCurrentChain();
+    }
+#endif
 
     UniValue txObj(UniValue::VOBJ);
     int populateResult = -3331;
