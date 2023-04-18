@@ -151,9 +151,9 @@ int IsMyAddressAllWallets(const std::string& address, const bool matchAny, const
     if (!HasWallets())
         return 0;
 
+    CTxDestination destination = DecodeDestination(address);
     for(const std::shared_ptr<CWallet> wallet : GetWallets()) {
-        CTxDestination destination = DecodeDestination(address);
-        isminetype ismine = wallet->IsMine(destination);
+        isminetype ismine = WITH_LOCK(wallet->cs_wallet, return wallet->IsMine(destination));
         if (matchAny && ismine != ISMINE_NO)
             return static_cast<int>(ismine);
         else if (ismine & filter)

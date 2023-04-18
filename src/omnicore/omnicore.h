@@ -25,12 +25,9 @@ class Coin;
 #include <set>
 #include <unordered_map>
 
-// Keep the state of the last 100 blocks to roll back quickly
-// in case of a block reorganization
-int const MAX_STATE_HISTORY = 100;
-// Also store the state every 5000 blocks to be able to recover
+// Also store the state every 10000 blocks to be able to recover
 // from a crash or shutdown during reparse more quickly
-int const STORE_EVERY_N_BLOCK = 5000;
+int const STORE_EVERY_N_BLOCK = 10000;
 // Don't store the state every block on mainnet until block 770000
 // was reached, can be set with -omniskipstoringstate.
 int const DONT_STORE_MAINNET_STATE_UNTIL = 770000;
@@ -188,7 +185,7 @@ void RemoveFromMarkerCache(const uint256& txHash);
 bool IsInMarkerCache(const uint256& txHash);
 
 /** Global handler to total wallet balances. */
-void CheckWalletUpdate(bool forceUpdate = false);
+void CheckWalletUpdate();
 
 /** Used to notify that the number of tokens for a property has changed. */
 void NotifyTotalTokensChanged(uint32_t propertyId, int block);

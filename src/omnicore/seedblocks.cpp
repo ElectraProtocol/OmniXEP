@@ -5517,7 +5517,7 @@ static std::set<int> GetBlockList()
 
 bool SkipBlock(int nBlock)
 {
-    static std::set<int> blockList = GetBlockList();
+    static const std::set<int> blockList = GetBlockList();
 
     // Scan all non mainnet blocks:
     if (Params().NetworkIDString() != "main") {

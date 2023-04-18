@@ -482,8 +482,7 @@ static void prune_state_files(const CBlockIndex* topIndex)
         CBlockIndex const *curIndex = GetBlockIndex(*iter);
 
         // if we have nothing int the index, or this block is too old..
-        if (nullptr == curIndex || (((topIndex->nHeight - curIndex->nHeight) > MAX_STATE_HISTORY)
-                && (curIndex->nHeight % STORE_EVERY_N_BLOCK != 0))) {
+        if (nullptr == curIndex || topIndex->nHeight > curIndex->nHeight) {
             if (msc_debug_persistence) {
                 if (curIndex) {
                     PrintToLog("State from Block:%s is no longer need, removing files (age-from-tip: %d)\n", (*iter).ToString(), topIndex->nHeight - curIndex->nHeight);
@@ -507,13 +506,8 @@ static void prune_state_files(const CBlockIndex* topIndex)
  */
 static int GetWrapModeHeight()
 {
-    static int nSkipBlocksUntil = gArgs.GetArg("-omniskipstoringstate", DONT_STORE_MAINNET_STATE_UNTIL);
-    
-    if (MainNet()) {
-        return nSkipBlocksUntil;
-    } else {
-        return 0;
-    }
+    static const int nSkipBlocksUntil = gArgs.GetArg("-omniskipstoringstate", DONT_STORE_MAINNET_STATE_UNTIL);
+    return nSkipBlocksUntil;
 }
 
 /**
@@ -521,21 +515,14 @@ static int GetWrapModeHeight()
  */
 bool IsPersistenceEnabled(int blockHeight)
 {
-    static int nWarpModeHeight = GetWrapModeHeight();
-
-    int nMinHeight = nWarpModeHeight;
-
-    if (nWarpModeHeight == 0) {
-        nMinHeight = GetHeight();
-    }
-
-    // if too far away from the top -- do not write
-    if (nMinHeight > (blockHeight + MAX_STATE_HISTORY)
-            && (blockHeight % STORE_EVERY_N_BLOCK != 0)) {
+    // do not store on any network different from main
+    if (!MainNet()) {
         return false;
     }
 
-    return true;
+    int nMinHeight = GetWrapModeHeight();
+    // if too far away from the top -- do not write
+    return blockHeight > nMinHeight && (blockHeight % STORE_EVERY_N_BLOCK == 0);
 }
 
 /**

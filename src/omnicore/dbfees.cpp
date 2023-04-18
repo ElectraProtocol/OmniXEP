@@ -235,13 +235,13 @@ void COmniFeeCache::DistributeCache(const uint32_t &propertyId, int block)
     ClearCache(propertyId, block);
 }
 
-// Prunes entries over MAX_STATE_HISTORY blocks old from the entry for a property
+// Prunes entries from the entry for a property
 void COmniFeeCache::PruneCache(const uint32_t &propertyId, int block)
 {
     if (msc_debug_fees) PrintToLog("Starting PruneCache for prop %d block %d...\n", propertyId, block);
     assert(pdb);
 
-    int pruneBlock = block - MAX_STATE_HISTORY;
+    int pruneBlock = block;
     if (msc_debug_fees) PrintToLog("Removing entries prior to block %d...\n", pruneBlock);
     const std::string key = strprintf("%010d", propertyId);
     std::set<feeCacheItem> sCacheHistoryItems = GetCacheHistory(propertyId);

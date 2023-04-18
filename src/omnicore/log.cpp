@@ -53,7 +53,6 @@ bool msc_debug_metadex3           = 0;
 bool msc_debug_packets            = 1;
 //! Print transaction fields, when interpreting packets (in RPC mode)
 bool msc_debug_packets_readonly   = 0;
-bool msc_debug_walletcache        = 0;
 //! Print each line added to consensus hash
 bool msc_debug_consensus_hash     = 0;
 //! Print consensus hashes for each block when parsing
@@ -260,7 +259,6 @@ void InitDebugLogLevels()
         if (*it == "metadex3") msc_debug_metadex3 = true;
         if (*it == "packets") msc_debug_packets = true;
         if (*it == "packets_readonly") msc_debug_packets_readonly = true;
-        if (*it == "walletcache") msc_debug_walletcache = true;
         if (*it == "consensus_hash") msc_debug_consensus_hash = true;
         if (*it == "consensus_hash_every_block") msc_debug_consensus_hash_every_block = true;
         if (*it == "alerts") msc_debug_alerts = true;
@@ -297,7 +295,6 @@ void InitDebugLogLevels()
             msc_debug_metadex3 = allDebugState;
             msc_debug_packets =  allDebugState;
             msc_debug_packets_readonly =  allDebugState;
-            msc_debug_walletcache = allDebugState;
             msc_debug_consensus_hash = allDebugState;
             msc_debug_consensus_hash_every_block = allDebugState;
             msc_debug_alerts = allDebugState;

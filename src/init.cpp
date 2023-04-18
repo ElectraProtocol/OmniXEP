@@ -109,7 +109,7 @@ static const char* DEFAULT_ASMAP_FILENAME="ip_asn.map";
 // Omni Core initialization and shutdown handlers
 extern int mastercore_init();
 extern int mastercore_shutdown();
-extern int CheckWalletUpdate(bool forceUpdate = false);
+extern int CheckWalletUpdate();
 
 /**
  * The PID file facilities.

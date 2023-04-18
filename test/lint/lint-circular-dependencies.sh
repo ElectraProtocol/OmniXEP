@@ -33,7 +33,6 @@ EXPECTED_CIRCULAR_DEPENDENCIES=(
     "omnicore/omnicore -> omnicore/sp -> omnicore/omnicore"
     "omnicore/omnicore -> omnicore/tally -> omnicore/omnicore"
     "omnicore/omnicore -> omnicore/tx -> omnicore/omnicore"
-    "omnicore/omnicore -> omnicore/walletcache -> omnicore/omnicore"
     "omnicore/omnicore -> omnicore/walletutils -> omnicore/omnicore"
     "omnicore/consensushash -> omnicore/dbspinfo -> omnicore/omnicore -> omnicore/consensushash"
     "omnicore/consensushash -> omnicore/dex -> omnicore/rules -> omnicore/consensushash"

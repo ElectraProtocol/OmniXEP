@@ -46,7 +46,6 @@ extern bool msc_debug_metadex2;
 extern bool msc_debug_metadex3;
 extern bool msc_debug_packets;
 extern bool msc_debug_packets_readonly;
-extern bool msc_debug_walletcache;
 extern bool msc_debug_consensus_hash;
 extern bool msc_debug_consensus_hash_every_block;
 extern bool msc_debug_alerts;

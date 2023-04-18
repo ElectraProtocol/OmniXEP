@@ -32,7 +32,6 @@
 #include <omnicore/utilsxep.h>
 #include <omnicore/utilsui.h>
 #include <omnicore/version.h>
-#include <omnicore/walletcache.h>
 #include <omnicore/walletutils.h>
 
 #include <base58.h>
@@ -98,6 +97,9 @@ static const double seconds_in_one_year = 31556926;
 
 static int nWaterlineBlock = 0;
 
+//! Last processed block
+static int lastProcessedBlock = 0;
+
 /**
  * Used to indicate, whether to automatically commit created transactions.
  *
@@ -159,6 +161,8 @@ std::map<uint32_t, int64_t> global_balance_money;
 std::map<uint32_t, int64_t> global_balance_reserved;
 //! Vector containing a list of properties relative to the wallet
 std::set<uint32_t> global_wallet_property_list;
+//! Set of addresses owned by the wallet
+std::set<std::string> wallet_addresses;
 
 std::string mastercore::strMPProperty(uint32_t propertyId)
 {
@@ -499,6 +503,9 @@ bool mastercore::update_tally_map(const std::string& who, uint32_t propertyId, i
     if (my_it == mp_tally_map.end()) {
         // insert an empty element
         my_it = (mp_tally_map.insert(std::make_pair(who, CMPTally()))).first;
+        if (fQtMode && IsMyAddressAllWallets(who, false, ISMINE_SPENDABLE)) {
+            wallet_addresses.insert(who);
+        }
     }
 
     CMPTally& tally = my_it->second;
@@ -615,7 +622,7 @@ void NotifyTotalTokensChanged(uint32_t propertyId, int block)
     }
 }
 
-void CheckWalletUpdate(bool forceUpdate)
+void CheckWalletUpdate()
 {
 #ifdef ENABLE_WALLET
     if (!HasWallets()) {
@@ -629,39 +636,43 @@ void CheckWalletUpdate(bool forceUpdate)
         return;
     }
 
-    if (!WalletCacheUpdate()) {
-        // no balance changes were detected that affect wallet addresses, signal a generic change to overall Omni state
-        if (!forceUpdate) {
-            uiInterface.OmniStateChanged();
-            return;
-        }
-    }
 #ifdef ENABLE_WALLET
     LOCK(cs_tally);
 
-    // balance changes were found in the wallet, update the global totals and signal a Omni balance change
-    global_balance_money.clear();
-    global_balance_reserved.clear();
-
-    // populate global balance totals and wallet property list - note global balances do not include additional balances from watch-only addresses
-    for (std::unordered_map<std::string, CMPTally>::iterator my_it = mp_tally_map.begin(); my_it != mp_tally_map.end(); ++my_it) {
-        // check if the address is a wallet address (including watched addresses)
-        std::string address = my_it->first;
-        int addressIsMine = IsMyAddressAllWallets(address, false, ISMINE_SPENDABLE);
-        if (!addressIsMine) continue;
+    auto update_tally = [](const std::string& address, CMPTally& tally) {
         // iterate only those properties in the TokenMap for this address
-        my_it->second.init();
+        tally.init();
         uint32_t propertyId;
-        while (0 != (propertyId = (my_it->second).next())) {
+        while (0 != (propertyId = tally.next())) {
             // add to the global wallet property list
             global_wallet_property_list.insert(propertyId);
-            // check if the address is spendable (only spendable balances are included in totals)
-            if (addressIsMine != ISMINE_SPENDABLE) continue;
             // work out the balances and add to globals
             global_balance_money[propertyId] += GetAvailableTokenBalance(address, propertyId);
             global_balance_reserved[propertyId] += GetTokenBalance(address, propertyId, SELLOFFER_RESERVE);
             global_balance_reserved[propertyId] += GetTokenBalance(address, propertyId, METADEX_RESERVE);
             global_balance_reserved[propertyId] += GetTokenBalance(address, propertyId, ACCEPT_RESERVE);
+        }
+    };
+
+    // balance changes were found in the wallet, update the global totals and signal a Omni balance change
+    global_balance_money.clear();
+    global_balance_reserved.clear();
+
+    if (global_wallet_property_list.empty()) {
+        wallet_addresses.clear();
+        // populate global balance totals and wallet property list - note global balances do not include additional balances from watch-only addresses
+        for (std::unordered_map<std::string, CMPTally>::iterator my_it = mp_tally_map.begin(); my_it != mp_tally_map.end(); ++my_it) {
+            int addressIsMine = IsMyAddressAllWallets(my_it->first, false, ISMINE_SPENDABLE);
+            if (!addressIsMine) continue;
+            wallet_addresses.insert(my_it->first);
+            update_tally(my_it->first, my_it->second);
+        }
+    } else {
+        for (auto& address : wallet_addresses) {
+            auto it = mp_tally_map.find(address);
+            if (it != mp_tally_map.end()) {
+                update_tally(it->first, it->second);
+            }
         }
     }
     // signal an Omni balance change
@@ -785,8 +796,8 @@ int mastercore::GetEncodingClass(const CTransaction& tx, int nBlock)
      * Perform a string comparison on hex for each scriptPubKey & look directly for Exodus hash160 bytes or omni marker bytes
      * This allows to drop non-Omni transactions with less work
      */
-    std::string strClassC = "6f6d6e69";
-    std::string strClassAB = "76a914946cb2e08075bcbaf157e47bcb67eb2b2339d24288ac";
+    constexpr const char* strClassC = "6f6d6e69";
+    constexpr const char* strClassAB = "76a914946cb2e08075bcbaf157e47bcb67eb2b2339d24288ac";
     bool examineClosely = false;
     for (unsigned int n = 0; n < tx.vout.size(); ++n) {
         const CTxOut& output = tx.vout[n];
@@ -891,7 +902,7 @@ static unsigned int nCacheMiss = 0;
  */
 static bool FillTxInputCache(const CTransaction& tx, const std::shared_ptr<std::map<COutPoint, Coin>> removedCoins)
 {
-    static unsigned int nCacheSize = gArgs.GetArg("-omnitxcache", 500000);
+    static const unsigned int nCacheSize = gArgs.GetArg("-omnitxcache", 500000);
 
     if (view.GetCacheSize() > nCacheSize) {
         PrintToLog("%s(): clearing cache before insertion [size=%d, hit=%d, miss=%d]\n",
@@ -914,13 +925,14 @@ static bool FillTxInputCache(const CTransaction& tx, const std::shared_ptr<std::
         CTransactionRef txPrev;
         uint256 hashBlock;
         Coin newcoin;
-        if (removedCoins && removedCoins->find(txIn.prevout) != removedCoins->end()) {
-            newcoin = removedCoins->find(txIn.prevout)->second;
+        std::map<COutPoint, Coin>::const_iterator rm_it;
+        if (removedCoins && ((rm_it = removedCoins->find(txIn.prevout)) != removedCoins->end())) {
+            newcoin = rm_it->second;
         } else if (GetTransaction(txIn.prevout.hash, txPrev, Params().GetConsensus(), hashBlock)) {
             newcoin.out.scriptPubKey = txPrev->vout[nOut].scriptPubKey;
             newcoin.out.nValue = txPrev->vout[nOut].nValue;
-            BlockMap::iterator bit = ::BlockIndex().find(hashBlock);
-            newcoin.nHeight = bit != ::BlockIndex().end() ? bit->second->nHeight : 1;
+            auto index = ::GetBlockIndex(hashBlock);
+            newcoin.nHeight = index ? index->nHeight : 1;
         } else {
             return false;
         }
@@ -1713,7 +1725,7 @@ void RewindDBsAndState(int nHeight, int nBlockPrev = 0, bool fInitialParse = fal
         LOCK(cs_tally);
         // clear the global wallet property list, perform a forced wallet update and tell the UI that state is no longer valid, and UI views need to be reinit
         global_wallet_property_list.clear();
-        CheckWalletUpdate(true);
+        CheckWalletUpdate();
         uiInterface.OmniStateInvalidated();
         nWaterline = nWaterlineBlock;
     }
@@ -1927,8 +1939,14 @@ int mastercore_init()
  */
 int mastercore_shutdown()
 {
-    LOCK(cs_tally);
+    LOCK2(cs_main, cs_tally);
 
+    if (lastProcessedBlock > 0) {
+        if (auto blockIndex = ChainActive()[lastProcessedBlock]) {
+            PersistInMemoryState(blockIndex);
+        }
+        lastProcessedBlock = 0;
+    }
     if (pDbTransactionList) {
         delete pDbTransactionList;
         pDbTransactionList = nullptr;
@@ -2151,7 +2169,7 @@ int mastercore_handler_block_end(int nBlockNow, CBlockIndex const * pBlockIndex,
         PendingCheck();
 
         // transactions were found in the block, signal the UI accordingly
-        if (countMP > 0) CheckWalletUpdate(true);
+        if (countMP > 0) CheckWalletUpdate();
 
         // calculate and print a consensus hash if required
         if (ShouldConsensusHashBlock(nBlockNow)) {
@@ -2181,11 +2199,12 @@ int mastercore_handler_block_end(int nBlockNow, CBlockIndex const * pBlockIndex,
     }
 
     LOCK2(cs_main, cs_tally);
-    if (checkpointValid){
+    if (checkpointValid && nBlockNow >= ConsensusParams().GENESIS_BLOCK) {
         // save out the state after this block
-        if (IsPersistenceEnabled(nBlockNow) && nBlockNow >= ConsensusParams().GENESIS_BLOCK) {
+        if (IsPersistenceEnabled(nBlockNow)) {
             PersistInMemoryState(pBlockIndex);
         }
+        lastProcessedBlock = nBlockNow;
     }
 
     return 0;

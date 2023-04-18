@@ -33,7 +33,7 @@ namespace mastercore
  */
 std::vector<TransactionRestriction> CConsensusParams::GetRestrictions() const
 {
-    const TransactionRestriction vTxRestrictions[] =
+    std::vector<TransactionRestriction> vTxRestrictions
     { //  transaction type                    version        allow 0  activation block
       //  ----------------------------------  -------------  -------  ------------------
         { OMNICORE_MESSAGE_TYPE_ALERT,        0xFFFF,        true,    MSC_ALERT_BLOCK           },
@@ -86,9 +86,7 @@ std::vector<TransactionRestriction> CConsensusParams::GetRestrictions() const
         { MSC_TYPE_SEND_TO_MANY,              MP_TX_PKT_V0,  false,   MSC_SEND_TO_MANY_BLOCK  },
     };
 
-    const size_t nSize = sizeof(vTxRestrictions) / sizeof(vTxRestrictions[0]);
-
-    return std::vector<TransactionRestriction>(vTxRestrictions, vTxRestrictions + nSize);
+    return vTxRestrictions;
 }
 
 /**
@@ -117,13 +115,11 @@ std::vector<TransactionCheckpoint> CConsensusParams::GetTransactions() const
 std::vector<ConsensusCheckpoint> CMainConsensusParams::GetCheckpoints() const
 {
     // block height, block hash and consensus hash
-    const ConsensusCheckpoint vCheckpoints[] = {
+    static const std::vector<ConsensusCheckpoint> vCheckpoints{
 
     };
 
-    const size_t nSize = sizeof(vCheckpoints) / sizeof(vCheckpoints[0]);
-
-    return std::vector<ConsensusCheckpoint>(vCheckpoints, vCheckpoints + nSize);
+    return vCheckpoints;
 }
 
 /**
@@ -132,13 +128,11 @@ std::vector<ConsensusCheckpoint> CMainConsensusParams::GetCheckpoints() const
 std::vector<TransactionCheckpoint> CMainConsensusParams::GetTransactions() const
 {
     // block height, transaction hash
-    const TransactionCheckpoint vTransactions[] = {
+    static const std::vector<TransactionCheckpoint> vTransactions{
 
     };
 
-    const size_t nSize = sizeof(vTransactions) / sizeof(vTransactions[0]);
-
-    return std::vector<TransactionCheckpoint>(vTransactions, vTransactions + nSize);
+    return vTransactions;
 }
 
 /**

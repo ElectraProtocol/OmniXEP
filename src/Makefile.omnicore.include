@@ -39,7 +39,6 @@ OMNICORE_H = \
   omnicore/utilsxep.h \
   omnicore/utilsui.h \
   omnicore/version.h \
-  omnicore/walletcache.h \
   omnicore/walletfetchtxs.h \
   omnicore/wallettxbuilder.h \
   omnicore/walletutils.h
@@ -85,7 +84,6 @@ OMNICORE_CPP = \
   omnicore/utilsxep.cpp \
   omnicore/utilsui.cpp \
   omnicore/version.cpp \
-  omnicore/walletcache.cpp \
   omnicore/walletfetchtxs.cpp \
   omnicore/wallettxbuilder.cpp \
   omnicore/walletutils.cpp

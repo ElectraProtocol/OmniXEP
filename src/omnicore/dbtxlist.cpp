@@ -150,7 +150,7 @@ void CMPTxList::recordMetaDExCancelTX(const uint256& txidMaster, const uint256& 
     }
 
     // Step 3 - Create new/update master record for cancel tx in TXList
-    const std::string key = txidMasterStr;
+    const std::string& key = txidMasterStr;
     const std::string value = strprintf("%u:%d:%u:%lu", fValid ? 1 : 0, nBlock, type, refNumber);
     PrintToLog("METADEXCANCELDEBUG : Writing master record %s(%s, valid=%s, block= %d, type= %d, number of affected transactions= %d)\n", __func__, txidMaster.ToString(), fValid ? "YES" : "NO", nBlock, type, refNumber);
     status = pdb->Put(writeoptions, key, value);
@@ -340,7 +340,7 @@ int CMPTxList::GetOmniTxsInBlockRange(int blockFirst, int blockLast, std::set<ui
 {
     int count = 0;
     leveldb::Iterator* it = NewIterator();
-    
+
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         const leveldb::Slice& sKey = it->key();
         const leveldb::Slice& sValue = it->value();
@@ -352,7 +352,7 @@ int CMPTxList::GetOmniTxsInBlockRange(int blockFirst, int blockLast, std::set<ui
             if (4 == vStr.size()) {
                 int blockCurrent = atoi(vStr[1]);
                 if (blockCurrent >= blockFirst && blockCurrent <= blockLast) {
-                    retTxs.insert(uint256S(sKey.ToString()));                    
+                    retTxs.insert(uint256S(sKey.ToString()));
                     ++count;
                 }
             }
@@ -801,7 +801,6 @@ void CMPTxList::printAll()
 bool CMPTxList::isMPinBlockRange(int starting_block, int ending_block, bool bDeleteFound)
 {
     leveldb::Slice skey, svalue;
-    unsigned int count = 0;
     std::vector<std::string> vstr;
     int block;
     unsigned int n_found = 0;
@@ -811,8 +810,6 @@ bool CMPTxList::isMPinBlockRange(int starting_block, int ending_block, bool bDel
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         skey = it->key();
         svalue = it->value();
-
-        ++count;
 
         std::string strvalue = it->value().ToString();
 
