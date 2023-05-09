@@ -521,8 +521,10 @@ bool IsPersistenceEnabled(int blockHeight)
     }
 
     int nMinHeight = GetWrapModeHeight();
+    int nStoreEveryBlock = ::ChainstateActive().IsInitialBlockDownload() ?
+                            STORE_EVERY_N_BLOCK_IDB : STORE_EVERY_N_BLOCK;
     // if too far away from the top -- do not write
-    return blockHeight > nMinHeight && (blockHeight % STORE_EVERY_N_BLOCK == 0);
+    return blockHeight > nMinHeight && (blockHeight % nStoreEveryBlock == 0);
 }
 
 /**

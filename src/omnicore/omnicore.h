@@ -25,9 +25,10 @@ class Coin;
 #include <set>
 #include <unordered_map>
 
-// Also store the state every 10000 blocks to be able to recover
-// from a crash or shutdown during reparse more quickly
-int const STORE_EVERY_N_BLOCK = 10000;
+// Store the state every 100 blocks to handle reorg
+int const STORE_EVERY_N_BLOCK = 100;
+// Store the state every 10000 blocks during initial block download
+int const STORE_EVERY_N_BLOCK_IDB = 10000;
 // Don't store the state every block on mainnet until block 770000
 // was reached, can be set with -omniskipstoringstate.
 int const DONT_STORE_MAINNET_STATE_UNTIL = 770000;
