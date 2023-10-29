@@ -1,6 +1,7 @@
 #ifndef XEP_OMNICORE_PARSING_H
 #define XEP_OMNICORE_PARSING_H
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -21,7 +22,7 @@ class uint160;
 #define MAX_SHA256_OBFUSCATION_TIMES  255
 
 /**
- * Swaps byte order on little-endian systems and does nothing 
+ * Swaps byte order on little-endian systems and does nothing
  * otherwise. SwapByteOrder cycles on LE systems.
  */
 void SwapByteOrder16(uint16_t&);
