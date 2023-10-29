@@ -40,8 +40,8 @@ config.log
 config.status
 configure
 libtool
-src/config/bitcoin-config.h
-src/config/bitcoin-config.h.in
+src/config/xep-config.h
+src/config/xep-config.h.in
 src/config/stamp-h1
 src/obj
 share/setup.nsi
@@ -151,7 +151,7 @@ test/tmp
 
 /doc/doxygen/
 
-libbitcoinconsensus.pc
+libxepconsensus.pc
 contrib/devtools/split-debug.sh
 
 # Output from running db4 installation
