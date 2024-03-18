@@ -44,7 +44,6 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_NULL_DATA: return "nulldata";
     case TX_WITNESS_V0_KEYHASH: return "witness_v0_keyhash";
     case TX_WITNESS_V0_SCRIPTHASH: return "witness_v0_scripthash";
-    case TX_WITNESS_V1_TAPROOT: return "witness_v1_taproot";
     case TX_WITNESS_UNKNOWN: return "witness_unknown";
     } // no default case, so the compiler can warn about missing cases
     assert(false);
@@ -517,8 +516,7 @@ namespace {
 class CScriptVisitor : public boost::static_visitor<bool>
 {
 private:
-    CScript* script;
-
+    CScript *script;
 public:
     explicit CScriptVisitor(CScript* scriptin) { script = scriptin; }
 
@@ -591,7 +589,7 @@ CScript GetScriptForMultisig(int nRequired, const std::vector<CPubKey>& keys)
 
 CScript GetScriptForWitness(const CScript& redeemscript)
 {
-    std::vector<std::vector<unsigned char>> vSolutions;
+    std::vector<std::vector<unsigned char> > vSolutions;
     txnouttype typ = Solver(redeemscript, vSolutions);
     if (typ == TX_PUBKEY) {
         return GetScriptForDestination(WitnessV0KeyHash(Hash160(vSolutions[0].begin(), vSolutions[0].end())));

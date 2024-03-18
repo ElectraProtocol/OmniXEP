@@ -73,10 +73,6 @@ static constexpr unsigned int STANDARD_CONTEXTUAL_SCRIPT_VERIFY_FLAGS = MANDATOR
                                                              SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM |
                                                              SCRIPT_VERIFY_WITNESS_PUBKEYTYPE |
                                                              SCRIPT_VERIFY_CONST_SCRIPTCODE |
-                                                             SCRIPT_VERIFY_TAPROOT |
-                                                             SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION |
-                                                             SCRIPT_VERIFY_DISCOURAGE_OP_SUCCESS |
-                                                             SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE |
                                                              SCRIPT_VERIFY_CHECKBLOCKATHEIGHTVERIFY;
 
 /** For convenience, standard but not contextual verify flags. */
