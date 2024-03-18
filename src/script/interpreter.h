@@ -6,11 +6,11 @@
 #ifndef XEP_SCRIPT_INTERPRETER_H
 #define XEP_SCRIPT_INTERPRETER_H
 
-#include <primitives/transaction.h>
 #include <script/script_error.h>
+#include <primitives/transaction.h>
 
-#include <stdint.h>
 #include <vector>
+#include <stdint.h>
 
 class CChain;
 class CPubKey;
@@ -115,75 +115,32 @@ enum {
     //
     SCRIPT_VERIFY_CONST_SCRIPTCODE = (1U << 16),
 
-    // Taproot/Tapscript validation (BIPs 341 & 342)
-    //
-    SCRIPT_VERIFY_TAPROOT = (1U << 17),
-
-    // Making unknown Taproot leaf versions non-standard
-    //
-    SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION = (1U << 18),
-
-    // Making unknown OP_SUCCESS non-standard
-    SCRIPT_VERIFY_DISCOURAGE_OP_SUCCESS = (1U << 19),
-
-    // Making unknown public key versions (in BIP 342 scripts) non-standard
-    SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE = (1U << 20),
-
     // Enforce CHECKBLOCKATHEIGHTVERIFY opcode
     SCRIPT_VERIFY_CHECKBLOCKATHEIGHTVERIFY = (1U << 31)
 };
 
 static constexpr unsigned int CONTEXTUAL_SCRIPT_VERIFY_FLAGS = SCRIPT_VERIFY_CHECKBLOCKATHEIGHTVERIFY;
 
-bool CheckSignatureEncoding(const std::vector<unsigned char>& vchSig, unsigned int flags, ScriptError* serror);
+bool CheckSignatureEncoding(const std::vector<unsigned char> &vchSig, unsigned int flags, ScriptError* serror);
 
-struct PrecomputedTransactionData {
-    // BIP341 precomputed data.
-    // These are single-SHA256, see https://github.com/xep/bips/blob/master/bip-0341.mediawiki#cite_note-15.
-    uint256 m_prevouts_single_hash;
-    uint256 m_sequences_single_hash;
-    uint256 m_outputs_single_hash;
-    uint256 m_spent_amounts_single_hash;
-    uint256 m_spent_scripts_single_hash;
-    //! Whether the 5 fields above are initialized.
-    bool m_bip341_taproot_ready = false;
-
-    // BIP143 precomputed data (double-SHA256).
+struct PrecomputedTransactionData
+{
     uint256 hashPrevouts, hashSequence, hashOutputs;
-    //! Whether the 3 fields above are initialized.
-    bool m_bip143_segwit_ready = false;
-
-    std::vector<CTxOut> m_spent_outputs;
-    //! Whether m_spent_outputs is initialized.
-    bool m_spent_outputs_ready = false;
-
-    PrecomputedTransactionData() = default;
-
-    template <class T>
-    void Init(const T& tx, std::vector<CTxOut>&& spent_outputs);
+    bool ready = false;
 
     template <class T>
     explicit PrecomputedTransactionData(const T& tx);
 };
 
-enum class SigVersion {
-    BASE = 0,       //!< Bare scripts and BIP16 P2SH-wrapped redeemscripts
-    WITNESS_V0 = 1, //!< Witness v0 (P2WPKH and P2WSH); see BIP 141
-    TAPROOT = 2,    //!< Witness v1 with 32-byte program, not BIP16 P2SH-wrapped, key path spending; see BIP 341
-    TAPSCRIPT = 3,  //!< Witness v1 with 32-byte program, not BIP16 P2SH-wrapped, script path spending, leaf version 0xc0; see BIP 342
+enum class SigVersion
+{
+    BASE = 0,
+    WITNESS_V0 = 1,
 };
 
 /** Signature hash sizes */
 static constexpr size_t WITNESS_V0_SCRIPTHASH_SIZE = 32;
 static constexpr size_t WITNESS_V0_KEYHASH_SIZE = 20;
-static constexpr size_t WITNESS_V1_TAPROOT_SIZE = 32;
-
-static constexpr uint8_t TAPROOT_LEAF_MASK = 0xfe;
-static constexpr uint8_t TAPROOT_LEAF_TAPSCRIPT = 0xc0;
-static constexpr size_t TAPROOT_CONTROL_BASE_SIZE = 33;
-static constexpr size_t TAPROOT_CONTROL_NODE_SIZE = 32;
-static constexpr size_t TAPROOT_CONTROL_MAX_NODE_COUNT = 128;
-static constexpr size_t TAPROOT_CONTROL_MAX_SIZE = TAPROOT_CONTROL_BASE_SIZE + TAPROOT_CONTROL_NODE_SIZE * TAPROOT_CONTROL_MAX_NODE_COUNT;
 
 template <class T>
 uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn, int nHashType, const CAmount& amount, SigVersion sigversion, const PrecomputedTransactionData* cache = nullptr);
@@ -239,7 +196,7 @@ public:
 using TransactionSignatureChecker = GenericTransactionSignatureChecker<CTransaction>;
 using MutableTransactionSignatureChecker = GenericTransactionSignatureChecker<CMutableTransaction>;
 
-bool EvalScript(std::vector<std::vector<unsigned char>>& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* error = nullptr);
+bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, unsigned int flags, const BaseSignatureChecker& checker, SigVersion sigversion, ScriptError* error = nullptr);
 bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness, unsigned int flags, const BaseSignatureChecker& checker, ScriptError* serror = nullptr);
 
 size_t CountWitnessSigOps(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness, unsigned int flags);

@@ -101,7 +101,7 @@ bool static IsCompressedPubKey(const valtype &vchPubKey) {
  * excessively padded (do not start with a 0 byte, unless an otherwise negative number follows,
  * in which case a single 0 byte is necessary and even required).
  *
- * See https://xeptalk.org/index.php?topic=8392.msg127623#msg127623
+ * See https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
  *
  * This function is consensus-critical since BIP66.
  */
@@ -174,7 +174,7 @@ bool static IsLowDERSignature(const valtype &vchSig, ScriptError* serror) {
     if (!IsValidSignatureEncoding(vchSig)) {
         return set_error(serror, SCRIPT_ERR_SIG_DER);
     }
-    // https://xep.stackexchange.com/a/12556:
+    // https://bitcoin.stackexchange.com/a/12556:
     //     Also note that inside transaction signatures, an extra hashtype byte
     //     follows the actual signature data.
     std::vector<unsigned char> vchSigCopy(vchSig.begin(), vchSig.begin() + vchSig.size() - 1);
@@ -1277,7 +1277,7 @@ public:
         ::Serialize(s, txTo.nLockTime);
     }
 };
-/*
+
 template <class T>
 uint256 GetPrevoutHash(const T& txTo)
 {
@@ -1307,124 +1307,22 @@ uint256 GetOutputsHash(const T& txTo)
     }
     return ss.GetHash();
 }
-*/
-
-/** Compute the (single) SHA256 of the concatenation of all prevouts of a tx. */
-template <class T>
-uint256 GetPrevoutsSHA256(const T& txTo)
-{
-    CHashWriter ss(SER_GETHASH, 0);
-    for (const auto& txin : txTo.vin) {
-        ss << txin.prevout;
-    }
-    return ss.GetSHA256();
-}
-
-/** Compute the (single) SHA256 of the concatenation of all nSequences of a tx. */
-template <class T>
-uint256 GetSequencesSHA256(const T& txTo)
-{
-    CHashWriter ss(SER_GETHASH, 0);
-    for (const auto& txin : txTo.vin) {
-        ss << txin.nSequence;
-    }
-    return ss.GetSHA256();
-}
-
-/** Compute the (single) SHA256 of the concatenation of all txouts of a tx. */
-template <class T>
-uint256 GetOutputsSHA256(const T& txTo)
-{
-    CHashWriter ss(SER_GETHASH, 0);
-    for (const auto& txout : txTo.vout) {
-        ss << txout;
-    }
-    return ss.GetSHA256();
-}
-
-/** Compute the (single) SHA256 of the concatenation of all amounts spent by a tx. */
-uint256 GetSpentAmountsSHA256(const std::vector<CTxOut>& outputs_spent)
-{
-    CHashWriter ss(SER_GETHASH, 0);
-    for (const auto& txout : outputs_spent) {
-        ss << txout.nValue;
-    }
-    return ss.GetSHA256();
-}
-
-/** Compute the (single) SHA256 of the concatenation of all scriptPubKeys spent by a tx. */
-uint256 GetSpentScriptsSHA256(const std::vector<CTxOut>& outputs_spent)
-{
-    CHashWriter ss(SER_GETHASH, 0);
-    for (const auto& txout : outputs_spent) {
-        ss << txout.scriptPubKey;
-    }
-    return ss.GetSHA256();
-}
 
 } // namespace
 
 template <class T>
-void PrecomputedTransactionData::Init(const T& txTo, std::vector<CTxOut>&& spent_outputs)
-{
-    assert(!m_spent_outputs_ready);
-
-    m_spent_outputs = std::move(spent_outputs);
-    if (!m_spent_outputs.empty()) {
-        assert(m_spent_outputs.size() == txTo.vin.size());
-        m_spent_outputs_ready = true;
-    }
-
-    // Determine which precomputation-impacting features this transaction uses.
-    bool uses_bip143_segwit = static_cast<uint32_t>(txTo.nVersion) >= 2;
-    bool uses_bip341_taproot = false;
-    for (size_t inpos = 0; inpos < txTo.vin.size(); ++inpos) {
-        if (!txTo.vin[inpos].scriptWitness.IsNull()) {
-             if (m_spent_outputs_ready && m_spent_outputs[inpos].scriptPubKey.size() == 2 + WITNESS_V1_TAPROOT_SIZE &&
-                 m_spent_outputs[inpos].scriptPubKey[0] == OP_1) {
-                // Treat every witness-bearing spend with 34-byte scriptPubKey that starts with OP_1 as a Taproot
-                // spend. This only works if spent_outputs was provided as well, but if it wasn't, actual validation
-                // will fail anyway. Note that this branch may trigger for scriptPubKeys that aren't actually segwit
-                // but in that case validation will fail as SCRIPT_ERR_WITNESS_UNEXPECTED anyway.
-                uses_bip341_taproot = true;
-             } else {
-                // Treat every spend that's not known to native witness v1 as a Witness v0 spend. This branch may
-                // also be taken for unknown witness versions, but it is harmless, and being precise would require
-                // P2SH evaluation to find the redeemScript.
-                uses_bip143_segwit = true;
-             }
-        }
-        if (uses_bip341_taproot && uses_bip143_segwit) break; // No need to scan further if we already need all.
-    }
-
-    if (uses_bip143_segwit || uses_bip341_taproot) {
-        // Computations shared between both sighash schemes.
-        m_prevouts_single_hash = GetPrevoutsSHA256(txTo);
-        m_sequences_single_hash = GetSequencesSHA256(txTo);
-        m_outputs_single_hash = GetOutputsSHA256(txTo);
-    }
-    if (uses_bip143_segwit) {
-        hashPrevouts = SHA256Uint256(m_prevouts_single_hash);
-        hashSequence = SHA256Uint256(m_sequences_single_hash);
-        hashOutputs = SHA256Uint256(m_outputs_single_hash);
-        m_bip143_segwit_ready = true;
-    }
-    if (uses_bip341_taproot) {
-        m_spent_amounts_single_hash = GetSpentAmountsSHA256(m_spent_outputs);
-        m_spent_scripts_single_hash = GetSpentScriptsSHA256(m_spent_outputs);
-        m_bip341_taproot_ready = true;
-    }
-}
-
-template <class T>
 PrecomputedTransactionData::PrecomputedTransactionData(const T& txTo)
 {
-    Init(txTo, {});
+    // Cache is calculated only for transactions with witness
+    if (txTo.HasWitness()) {
+        hashPrevouts = GetPrevoutHash(txTo);
+        hashSequence = GetSequenceHash(txTo);
+        hashOutputs = GetOutputsHash(txTo);
+        ready = true;
+    }
 }
 
 // explicit instantiation
-template void PrecomputedTransactionData::Init(const CTransaction& txTo, std::vector<CTxOut>&& spent_outputs);
-template void PrecomputedTransactionData::Init(const CMutableTransaction& txTo, std::vector<CTxOut>&& spent_outputs);
 template PrecomputedTransactionData::PrecomputedTransactionData(const CTransaction& txTo);
 template PrecomputedTransactionData::PrecomputedTransactionData(const CMutableTransaction& txTo);
 
@@ -1437,18 +1335,19 @@ uint256 SignatureHash(const CScript& scriptCode, const T& txTo, unsigned int nIn
         uint256 hashPrevouts;
         uint256 hashSequence;
         uint256 hashOutputs;
-        const bool cacheready = cache && cache->m_bip143_segwit_ready;
+        const bool cacheready = cache && cache->ready;
 
         if (!(nHashType & SIGHASH_ANYONECANPAY)) {
-            hashPrevouts = cacheready ? cache->hashPrevouts : SHA256Uint256(GetPrevoutsSHA256(txTo));
+            hashPrevouts = cacheready ? cache->hashPrevouts : GetPrevoutHash(txTo);
         }
 
         if (!(nHashType & SIGHASH_ANYONECANPAY) && (nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
-            hashSequence = cacheready ? cache->hashSequence : SHA256Uint256(GetSequencesSHA256(txTo));
+            hashSequence = cacheready ? cache->hashSequence : GetSequenceHash(txTo);
         }
 
+
         if ((nHashType & 0x1f) != SIGHASH_SINGLE && (nHashType & 0x1f) != SIGHASH_NONE) {
-            hashOutputs = cacheready ? cache->hashOutputs : SHA256Uint256(GetOutputsSHA256(txTo));
+            hashOutputs = cacheready ? cache->hashOutputs : GetOutputsHash(txTo);
         } else if ((nHashType & 0x1f) == SIGHASH_SINGLE && nIn < txTo.vout.size()) {
             CHashWriter ss(SER_GETHASH, 0);
             ss << txTo.vout[nIn];
