@@ -1314,7 +1314,7 @@ template <class T>
 PrecomputedTransactionData::PrecomputedTransactionData(const T& txTo)
 {
     // Cache is calculated only for transactions with witness
-    if (txTo.HasWitness()) {
+    if (txTo.HasWitness() || static_cast<uint32_t>(txTo.nVersion) >= 2) {
         hashPrevouts = GetPrevoutHash(txTo);
         hashSequence = GetSequenceHash(txTo);
         hashOutputs = GetOutputsHash(txTo);
