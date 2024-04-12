@@ -704,9 +704,15 @@ bool CMPTransaction::interpret_RevokeTokens()
     SwapByteOrder64(nValue);
     nNewValue = nValue;
 
+    // Get revoke memo.
+    const char* p = 16 + (char*) &pkt;
+    std::string spstr(p);
+    memcpy(revoke_memo, spstr.c_str(), std::min(spstr.length(), sizeof(revoke_memo)-1));
+
     if ((!rpcOnly && msc_debug_packets) || msc_debug_packets_readonly) {
         PrintToLog("\t        property: %d (%s)\n", property, strMPProperty(property));
         PrintToLog("\t           value: %s\n", FormatMP(property, nValue));
+        PrintToLog("\t            memo: %s\n", revoke_memo);
     }
 
     return true;

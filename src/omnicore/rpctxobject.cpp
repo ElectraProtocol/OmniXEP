@@ -572,6 +572,7 @@ void populateRPCTypeRevoke(CMPTransaction& omniObj, UniValue& txobj)
     txobj.pushKV("propertyid", (uint64_t)propertyId);
     txobj.pushKV("divisible", isPropertyDivisible(propertyId));
     txobj.pushKV("amount", FormatMP(propertyId, omniObj.getAmount()));
+    txobj.pushKV("memo", omniObj.getRevokeMemo());
 }
 
 void populateRPCTypeSendNonFungible(CMPTransaction& omniObj, UniValue& txobj)

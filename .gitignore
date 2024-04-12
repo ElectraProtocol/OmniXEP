@@ -181,3 +181,4 @@ dist/
 
 .vs/slnx.sqlite
 src/.vscode/settings.json
+src/omnicore/.vscode/settings.json
