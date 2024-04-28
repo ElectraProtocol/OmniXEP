@@ -12,10 +12,10 @@
 //
 
 // Increase with every consensus affecting change
-#define OMNICORE_VERSION_MAJOR       1
+#define OMNICORE_VERSION_MAJOR       0
 
 // Increase with every non-consensus affecting feature
-#define OMNICORE_VERSION_MINOR       0
+#define OMNICORE_VERSION_MINOR       1
 
 // Increase with every patch, which is not a feature or consensus affecting
 #define OMNICORE_VERSION_PATCH       0

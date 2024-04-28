@@ -1,26 +1,26 @@
 AC_PREREQ([2.69])
 define(_CLIENT_VERSION_MAJOR, 1)
 define(_CLIENT_VERSION_MINOR, 0)
-define(_CLIENT_VERSION_REVISION, 4)
+define(_CLIENT_VERSION_REVISION, 5)
 define(_CLIENT_VERSION_BUILD, 0)
 define(_CLIENT_VERSION_RC, 0)
 define(_CLIENT_VERSION_IS_RELEASE, true)
-define(_COPYRIGHT_YEAR, 2022)
+define(_COPYRIGHT_YEAR, 2024)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
 define(_COPYRIGHT_HOLDERS_SUBSTITUTION,[[Xep Core and Omni Core]])
-define(_OMNICORE_VERSION_MAJOR, 1)
-define(_OMNICORE_VERSION_MINOR, 0)
+define(_OMNICORE_VERSION_MAJOR, 0)
+define(_OMNICORE_VERSION_MINOR, 1)
 define(_OMNICORE_VERSION_PATCH, 0)
 define(_OMNICORE_VERSION_BUILD, 0)
 define(_OMNICORE_VERSION_RC, 0)
-AC_INIT([Omni Core],m4_join([.], _OMNICORE_VERSION_MAJOR, _OMNICORE_VERSION_MINOR, _OMNICORE_VERSION_PATCH, m4_if(_OMNICORE_VERSION_BUILD, [0], [], _OMNICORE_VERSION_BUILD))m4_if(_OMNICORE_VERSION_RC, [0], [], [rc]_OMNICORE_VERSION_RC),[https://github.com/OmniLayer/omnicore/issues],[omnicore],[http://www.omnilayer.org/])
+AC_INIT([Omni Core],m4_join([.], _OMNICORE_VERSION_MAJOR, _OMNICORE_VERSION_MINOR, _OMNICORE_VERSION_PATCH, m4_if(_OMNICORE_VERSION_BUILD, [0], [], _OMNICORE_VERSION_BUILD))m4_if(_OMNICORE_VERSION_RC, [0], [], [rc]_OMNICORE_VERSION_RC),[https://github.com/ElectraProtocol/OmniXEP],[omnicore],[https://www.electraprotocol.com])
 AC_CONFIG_SRCDIR([src/validation.cpp])
 AC_CONFIG_HEADERS([src/config/xep-config.h])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 
 XEP_DAEMON_NAME=omnixepd
-XEP_GUI_NAME=omnicore-qt
+XEP_GUI_NAME=omnixep-qt
 XEP_CLI_NAME=omnixep-cli
 XEP_TX_NAME=omnixep-tx
 XEP_WALLET_TOOL_NAME=omnixep-wallet

@@ -86,7 +86,7 @@ enum TransactionType {
   MSC_TYPE_DISABLE_FREEZING           = 72,
   MSC_TYPE_ADD_DELEGATE               = 73,
   MSC_TYPE_REMOVE_DELEGATE            = 74,
-  MSC_TYPE_XEP_PAYMENT            = 80,
+  MSC_TYPE_XEP_PAYMENT                = 80,
   MSC_TYPE_FREEZE_PROPERTY_TOKENS     = 185,
   MSC_TYPE_UNFREEZE_PROPERTY_TOKENS   = 186,
   MSC_TYPE_ANYDATA                    = 200,

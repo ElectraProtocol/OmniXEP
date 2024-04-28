@@ -210,7 +210,7 @@ bool ProduceSignature(const SigningProvider& provider, const BaseSignatureCreato
     CScript subscript;
     sigdata.scriptWitness.stack.clear();
 
-    if (solved && whichType == TX_SCRIPTHASH  || whichType == TX_SCRIPTHASH_REPLAY)
+    if (solved && (whichType == TX_SCRIPTHASH  || whichType == TX_SCRIPTHASH_REPLAY))
     {
         // Solver returns the subscript that needs to be evaluated;
         // the final scriptSig is the signatures from that

@@ -71,7 +71,7 @@
 // Application startup time (used for uptime calculation)
 const int64_t nStartupTime = GetTime();
 
-const char * const XEP_CONF_FILENAME = "xep.conf";
+const char * const XEP_CONF_FILENAME = "omnixep.conf";
 
 ArgsManager gArgs;
 

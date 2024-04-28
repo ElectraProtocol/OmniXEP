@@ -52,7 +52,7 @@ std::vector<TransactionRestriction> CConsensusParams::GetRestrictions() const
         { MSC_TYPE_CREATE_PROPERTY_VARIABLE,  MP_TX_PKT_V2,  false,   MSC_XEP_CROWDSALE_BLOCK   },
         { MSC_TYPE_CLOSE_CROWDSALE,           MP_TX_PKT_V0,  false,   MSC_SP_BLOCK              },
 
-        { MSC_TYPE_XEP_PAYMENT,           MP_TX_PKT_V0,   true,   MSC_XEP_CROWDSALE_BLOCK   },
+        { MSC_TYPE_XEP_PAYMENT,               MP_TX_PKT_V0,   true,   MSC_XEP_CROWDSALE_BLOCK   },
 
         { MSC_TYPE_CREATE_PROPERTY_MANUAL,    MP_TX_PKT_V0,  false,   MSC_MANUALSP_BLOCK        },
         { MSC_TYPE_GRANT_PROPERTY_TOKENS,     MP_TX_PKT_V0,  false,   MSC_MANUALSP_BLOCK        },
@@ -148,7 +148,7 @@ CMainConsensusParams::CMainConsensusParams()
     exodusBonusPerWeek = 0;   //No bonus
     exodusDeadline = 1698809526; // Wed Nov 01 2023 03:32:06 GMT+0000
     exodusReward = 1;         // 1:1 ratio
-    GENESIS_BLOCK = 984500;
+    GENESIS_BLOCK = 1317100;
     LAST_EXODUS_BLOCK = std::numeric_limits<int>::max(); // No end so far
     // Notice range for feature activations:
     MIN_ACTIVATION_BLOCKS = 2048;  // ~2 weeks

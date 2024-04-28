@@ -174,8 +174,8 @@ bool CMPTransaction::interpret_Transaction()
         case MSC_TYPE_CHANGE_ISSUER_ADDRESS:
             return interpret_ChangeIssuer();
 
-        case MSC_TYPE_XEP_PAYMENT:
-            return interpret_XepPayment();
+        //case MSC_TYPE_XEP_PAYMENT:
+            //return interpret_XepPayment();
 
         case MSC_TYPE_ENABLE_FREEZING:
             return interpret_EnableFreezing();
