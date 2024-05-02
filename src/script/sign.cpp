@@ -133,6 +133,7 @@ static bool SignStep(const SigningProvider& provider, const BaseSignatureCreator
         return true;
     }
     case TX_SCRIPTHASH:
+    case TX_SCRIPTHASH_REPLAY:
         h160 = uint160(vSolutions[0]);
         if (GetCScript(provider, sigdata, h160, scriptRet)) {
             ret.push_back(std::vector<unsigned char>(scriptRet.begin(), scriptRet.end()));

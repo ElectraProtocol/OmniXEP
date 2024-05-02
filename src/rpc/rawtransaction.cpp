@@ -586,7 +586,7 @@ static UniValue decodescript(const JSONRPCRequest& request)
         typeStr = type.get_str();
     }
 
-    if (typeStr != "scripthash"  && typeStr != "scripthash_replay") {
+    if (typeStr != "scripthash" && typeStr != "scripthash_replay") {
         // P2SH cannot be wrapped in a P2SH. If this script is already a P2SH,
         // don't return the address for a P2SH of the P2SH.
         r.pushKV("p2sh", EncodeDestination(ScriptHash(script)));
