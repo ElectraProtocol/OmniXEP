@@ -126,6 +126,8 @@ enum TransactionType {
 #define OMNI_PROPERTY_XEP   0
 #define OMNI_PROPERTY_MSC   1
 #define OMNI_PROPERTY_TMSC  2
+//TODO next update:
+// #define OMNI_PROPERTY_OXEP  138 
 
 /** Number formatting related functions. */
 std::string FormatDivisibleMP(int64_t amount, bool fSign = false);

@@ -170,7 +170,7 @@ CMainConsensusParams::CMainConsensusParams()
     MSC_METADEX_BLOCK = GENESIS_BLOCK;
     MSC_SEND_ALL_BLOCK = GENESIS_BLOCK;
     MSC_BET_BLOCK = std::numeric_limits<int>::max();
-    MSC_STOV1_BLOCK = std::numeric_limits<int>::max();
+    MSC_STOV1_BLOCK = std::numeric_limits<int>::max(); //TODO next update: activate at current height
     MSC_XEP_CROWDSALE_BLOCK = GENESIS_BLOCK;
     MSC_ANYDATA_BLOCK = GENESIS_BLOCK;
     MSC_NONFUNGIBLE_BLOCK = GENESIS_BLOCK;
