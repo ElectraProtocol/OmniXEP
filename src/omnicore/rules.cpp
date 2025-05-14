@@ -171,8 +171,8 @@ CMainConsensusParams::CMainConsensusParams()
     MSC_ANYDATA_BLOCK = GENESIS_BLOCK;
     MSC_NONFUNGIBLE_BLOCK = GENESIS_BLOCK;
     MSC_DELEGATED_ISSUANCE_BLOCK = GENESIS_BLOCK;
-    MSC_SEND_TO_MANY_BLOCK = std::numeric_limits<int>::max();
-    MSC_NFT_BLOCK = std::numeric_limits<int>::max();
+    MSC_SEND_TO_MANY_BLOCK = 1720000;
+    MSC_NFT_BLOCK = GENESIS_BLOCK;
     // Other feature activations:
     GRANTEFFECTS_FEATURE_BLOCK = GENESIS_BLOCK;
     DEXMATH_FEATURE_BLOCK = GENESIS_BLOCK;
@@ -181,7 +181,7 @@ CMainConsensusParams::CMainConsensusParams()
     FEES_FEATURE_BLOCK = std::numeric_limits<int>::max();
     FREEZENOTICE_FEATURE_BLOCK = std::numeric_limits<int>::max();
     FREEDEX_FEATURE_BLOCK = GENESIS_BLOCK;
-    NONFUNGIBLETOKEN_ISSUER_DATA = std::numeric_limits<int>::max();
+    NONFUNGIBLETOKEN_ISSUER_DATA = GENESIS_BLOCK;
 }
 
 /**
