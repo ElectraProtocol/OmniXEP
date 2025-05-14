@@ -1437,6 +1437,7 @@ static UniValue omni_getproperty(const JSONRPCRequest& request)
                {RPCResult::Type::BOOL, "non-fungibletoken", "whether the property contains non-fungible tokens"},
                {RPCResult::Type::BOOL, "freezingenabled", "whether freezing is enabled for the property (managed properties only)"},
                {RPCResult::Type::STR_AMOUNT, "totaltokens", "the total number of tokens in existence"},
+               {RPCResult::Type::NUM, "totalholders", "the total number of addresses holding the token"},
            },
        },
        RPCExamples{
@@ -1456,7 +1457,8 @@ static UniValue omni_getproperty(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Property identifier does not exist");
         }
     }
-    int64_t nTotalTokens = getTotalTokens(propertyId);
+    int64_t ntotalHolders = 0;
+    int64_t nTotalTokens = getTotalTokens(propertyId, &ntotalHolders);
     std::string strTotalTokens = FormatMP(propertyId, nTotalTokens);
 
     UniValue response(UniValue::VOBJ);
@@ -1469,6 +1471,7 @@ static UniValue omni_getproperty(const JSONRPCRequest& request)
         response.pushKV("freezingenabled", isFreezingEnabled(propertyId, currentBlock));
     }
     response.pushKV("totaltokens", strTotalTokens);
+    response.pushKV("totalholders", ntotalHolders);
 
     return response;
 }
