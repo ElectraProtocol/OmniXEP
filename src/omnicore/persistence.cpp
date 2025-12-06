@@ -481,8 +481,11 @@ static void prune_state_files(const CBlockIndex* topIndex)
         // look up the CBlockIndex for height info
         CBlockIndex const *curIndex = GetBlockIndex(*iter);
 
+        const int maxReorgDepth = 10000;
+
         // if we have nothing int the index, or this block is too old..
-        if (nullptr == curIndex || topIndex->nHeight > curIndex->nHeight) {
+        if (nullptr == curIndex || (topIndex->nHeight - curIndex->nHeight) > maxReorgDepth) {
+        //if (nullptr == curIndex || topIndex->nHeight > curIndex->nHeight) {
             if (msc_debug_persistence) {
                 if (curIndex) {
                     PrintToLog("State from Block:%s is no longer need, removing files (age-from-tip: %d)\n", (*iter).ToString(), topIndex->nHeight - curIndex->nHeight);
