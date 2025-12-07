@@ -26,12 +26,12 @@ class Coin;
 #include <unordered_map>
 
 // Store the state every 100 blocks to handle reorg
-int const STORE_EVERY_N_BLOCK = 100;
+int const STORE_EVERY_N_BLOCK = 1000;
 // Store the state every 10000 blocks during initial block download
 int const STORE_EVERY_N_BLOCK_IDB = 10000;
 // Don't store the state every block on mainnet until block 770000
 // was reached, can be set with -omniskipstoringstate.
-int const DONT_STORE_MAINNET_STATE_UNTIL = 770000;
+int const DONT_STORE_MAINNET_STATE_UNTIL = 1900000;
 
 #define TEST_ECO_PROPERTY_1 (0x80000003UL)
 
