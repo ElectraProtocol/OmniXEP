@@ -73,6 +73,74 @@ static bool is_state_prefix(std::string const &str)
     return false;
 }
 
+// snapshots var
+static const int MAX_REORG_DEPTH = 10000;
+static const int SNAPSHOT_SPACING_BLOCKS = 1000;
+
+int64_t GetLastStateSnapshotHeight()
+{
+    int64_t lastHeight = -1;
+
+    fs::directory_iterator dIter(pathStateFiles);
+    fs::directory_iterator endIter;
+
+    for (; dIter != endIter; ++dIter) {
+        if (!fs::is_regular_file(dIter->status())) {
+            continue;
+        }
+
+        std::string fName = dIter->path().filename().string();
+
+        std::vector<std::string> vstr;
+        boost::split(vstr, fName, boost::is_any_of("-."), boost::token_compress_on);
+
+        if (vstr.size() == 3 &&
+            is_state_prefix(vstr[0]) &&
+            boost::equals(vstr[2], "dat")) {
+
+            uint256 blockHash;
+            blockHash.SetHex(vstr[1]);
+
+            const CBlockIndex* idx = GetBlockIndex(blockHash);
+            if (!idx) {
+                continue;
+            }
+
+            if (idx->nHeight > lastHeight) {
+                lastHeight = idx->nHeight;
+            }
+        }
+    }
+
+    return lastHeight; // -1 = no snapshot yet
+}
+
+void MaybeCreateStateSnapshot(const CBlockIndex* tip)
+{
+    if (!tip) {
+        LogPrintf("OmniXEP: snapshot creation skipped (tip is null)\n");
+        return;
+    }
+
+    const int64_t tipHeight = tip->nHeight;
+    const int64_t lastSnapHeight = GetLastStateSnapshotHeight();
+
+    if (lastSnapHeight >= 0) {
+        const int64_t ageFromTip = tipHeight - lastSnapHeight;
+
+        if (ageFromTip < SNAPSHOT_SPACING_BLOCKS) {
+            //LogPrintf("OmniXEP: snapshot creation skipped (last snapshot at height %d, age-from-tip=%d < %d)\n",
+            //          lastSnapHeight, ageFromTip, SNAPSHOT_SPACING_BLOCKS);
+            return;
+        }
+    }
+
+    LogPrintf("OmniXEP: creating new state snapshot at height %d\n", tipHeight);
+
+    // Use the existing low-level writer (this is your "snapshot" primitive)
+    PersistInMemoryState(tip);
+}
+
 static int write_msc_balances(std::ofstream& file, CHash256& hasher)
 {
     std::unordered_map<std::string, CMPTally>::iterator iter;
@@ -447,8 +515,12 @@ static int write_state_file(const CBlockIndex* pBlockIndex, int what)
     return result;
 }
 
-static void prune_state_files(const CBlockIndex* topIndex)
+void prune_state_files(const CBlockIndex* topIndex)
 {
+    //DEV
+    LogPrintf("OmniXEP: prune_state_files called at height %d\n, pathStateFiles=%s\n",
+        topIndex ? topIndex->nHeight : -1, pathStateFiles.string());
+
     // build a set of blockHashes for which we have any state files
     std::set<uint256> statefulBlockHashes;
 
@@ -456,9 +528,9 @@ static void prune_state_files(const CBlockIndex* topIndex)
     fs::directory_iterator endIter;
     for (; dIter != endIter; ++dIter) {
         std::string fName = dIter->path().empty() ? "<invalid>" : (*--dIter->path().end()).string();
-        if (false == fs::is_regular_file(dIter->status())) {
+        if (!fs::is_regular_file(dIter->status())) {
             // skip funny business
-            PrintToLog("Non-regular file found in persistence directory : %s\n", fName);
+            LogPrintf("Non-regular file found in persistence directory : %s\n", fName);
             continue;
         }
 
@@ -471,35 +543,63 @@ static void prune_state_files(const CBlockIndex* topIndex)
             blockHash.SetHex(vstr[1]);
             statefulBlockHashes.insert(blockHash);
         } else {
-            PrintToLog("None state file found in persistence directory : %s\n", fName);
+            LogPrintf("Non state file found in persistence directory : %s\n", fName);
         }
     }
+    LogPrintf("OmniXEP: prune_state_files found %d stateful block hashes\n", statefulBlockHashes.size());
 
     // for each blockHash in the set, determine the distance from the given block
     std::set<uint256>::const_iterator iter;
     for (iter = statefulBlockHashes.begin(); iter != statefulBlockHashes.end(); ++iter) {
         // look up the CBlockIndex for height info
         CBlockIndex const *curIndex = GetBlockIndex(*iter);
+        LogPrintf("SNAPSHOT curIndex: %s\n", curIndex->nHeight);
 
-        const int maxReorgDepth = 10000;
+        bool remove = false;
 
-        // if we have nothing int the index, or this block is too old..
-        if (nullptr == curIndex || (topIndex->nHeight - curIndex->nHeight) > maxReorgDepth) {
-        //if (nullptr == curIndex || topIndex->nHeight > curIndex->nHeight) {
-            if (msc_debug_persistence) {
-                if (curIndex) {
-                    PrintToLog("State from Block:%s is no longer need, removing files (age-from-tip: %d)\n", (*iter).ToString(), topIndex->nHeight - curIndex->nHeight);
-                } else {
-                    PrintToLog("State from Block:%s is no longer need, removing files (not in index)\n", (*iter).ToString());
-                }
+        if (!curIndex) {
+            // orphan block
+            remove = true;
+        }
+        else if (!::ChainActive().Contains(curIndex)) {
+            // block from reorg, useless
+            remove = true;
+        }
+        else {
+            // block in active chain, apply reorg window
+            int ageFromTip = topIndex->nHeight - curIndex->nHeight;
+            if (ageFromTip > MAX_REORG_DEPTH) {
+                remove = true;
             }
+        }
 
-            // destroy the associated files!
-            std::string strBlockHash = iter->ToString();
-            for (int i = 0; i < NUM_FILETYPES; ++i) {
-                fs::path path = pathStateFiles / strprintf("%s-%s.dat", statePrefix[i], strBlockHash);
-                fs::remove(path);
+        int ageFromTip = topIndex->nHeight - curIndex->nHeight;
+        LogPrintf("OmniXEP: candidate state %s, inActive=%d, ageFromTip=%d, remove=%d (before age check)\n",
+            iter->ToString(), curIndex ? ::ChainActive().Contains(curIndex) : 0, ageFromTip, (int)remove);
+
+
+        if (!remove) {
+            continue;
+        }
+
+        if (msc_debug_persistence) {
+            if (curIndex) {
+                bool inActive = ::ChainActive().Contains(curIndex);
+                int ageFromTip = topIndex->nHeight - curIndex->nHeight;
+                LogPrintf("State from Block:%s is no longer needed, removing files (age-from-tip: %d, inActiveChain=%d)\n",
+                    (*iter).ToString(), ageFromTip, inActive);
+            } else {
+                LogPrintf("State from Block:%s is no longer needed, removing files (not in index)\n",
+                    (*iter).ToString());
             }
+        }
+
+        // destroy the associated files!
+        std::string strBlockHash = iter->ToString();
+        for (int i = 0; i < NUM_FILETYPES; ++i) {
+            fs::path path = pathStateFiles / strprintf("%s-%s.dat", statePrefix[i], strBlockHash);
+            LogPrintf("REMOVE SNAPSHOT: %s", path);
+            fs::remove(path);
         }
     }
 }

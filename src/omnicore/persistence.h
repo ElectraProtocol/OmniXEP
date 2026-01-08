@@ -17,5 +17,13 @@ int RestoreInMemoryState(const std::string& filename, int what, bool verifyHash 
 /** Loads and restores the latest state. Returns -1 if reparse is required. */
 int LoadMostRelevantInMemoryState();
 
+/** Get the block height of last snapshot */
+int64_t GetLastStateSnapshotHeight();
+
+/** Create a snapshot if last one is older than SNAPSHOT_SPACING_BLOCKS */
+void MaybeCreateStateSnapshot(const CBlockIndex* tip);
+
+/** Clean old snapshots */
+void prune_state_files(const CBlockIndex* topIndex);
 
 #endif // XEP_OMNICORE_PERSISTENCE_H

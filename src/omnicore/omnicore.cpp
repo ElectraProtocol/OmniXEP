@@ -1924,7 +1924,20 @@ int mastercore_init()
         PrintToLog("Exodus balance after initialization: %s\n", FormatDivisibleMP(exodus_balance));
     }
 
-    PrintToConsole("Omni Core initialization completed\n");
+    // run post-sync snapshot/cleanup if the initial block download is finished
+    if (!::ChainstateActive().IsInitialBlockDownload()) {
+        LOCK(cs_main);
+        const CBlockIndex* tip = ChainActive().Tip();
+        if (tip != nullptr) {
+            MaybeCreateStateSnapshot(tip);
+        } else {
+            LogPrintf("OmniXEP: post-sync snapshot skipped (no active chain tip)\n");
+        }
+    } else {
+        LogPrintf("OmniXEP: post-sync snapshot skipped (still in initial block download)\n");
+    }
+
+    LogPrintf("Omni Core initialization completed\n");
 
     return 0;
 }
@@ -2200,10 +2213,8 @@ int mastercore_handler_block_end(int nBlockNow, CBlockIndex const * pBlockIndex,
 
     LOCK2(cs_main, cs_tally);
     if (checkpointValid && nBlockNow >= ConsensusParams().GENESIS_BLOCK) {
-        // save out the state after this block
-        if (IsPersistenceEnabled(nBlockNow)) {
-            PersistInMemoryState(pBlockIndex);
-        }
+        // Create/prune snapshots with spacing logic instead of IsPersistenceEnabled()
+        MaybeCreateStateSnapshot(pBlockIndex);
         lastProcessedBlock = nBlockNow;
     }
 
