@@ -28,6 +28,9 @@
 
 namespace mastercore
 {
+const CAmount OMNI_CONTRACT_CREATION_FEE = 1000 * COIN;
+const char* const OMNI_CONTRACT_BURN_ADDRESS = "xBURNomniXEPXXXXXXXXXXXXXXXXbWWsD9";
+
 /**
  * Returns a mapping of transaction types, and the blocks at which they are enabled.
  */
@@ -173,6 +176,7 @@ CMainConsensusParams::CMainConsensusParams()
     MSC_DELEGATED_ISSUANCE_BLOCK = GENESIS_BLOCK;
     MSC_SEND_TO_MANY_BLOCK = 1720000;
     MSC_NFT_BLOCK = GENESIS_BLOCK;
+    MSC_PROPERTY_CREATION_RULES_BLOCK = 2000000;
     // Other feature activations:
     GRANTEFFECTS_FEATURE_BLOCK = GENESIS_BLOCK;
     DEXMATH_FEATURE_BLOCK = GENESIS_BLOCK;
@@ -222,6 +226,7 @@ CTestNetConsensusParams::CTestNetConsensusParams()
     MSC_DELEGATED_ISSUANCE_BLOCK = 0;
     MSC_SEND_TO_MANY_BLOCK = 0;
     MSC_NFT_BLOCK = 999999;
+    MSC_PROPERTY_CREATION_RULES_BLOCK = std::numeric_limits<int>::max();
     // Other feature activations:
     GRANTEFFECTS_FEATURE_BLOCK = 0;
     DEXMATH_FEATURE_BLOCK = 0;
@@ -271,6 +276,7 @@ CRegTestConsensusParams::CRegTestConsensusParams()
     MSC_DELEGATED_ISSUANCE_BLOCK = 0;
     MSC_SEND_TO_MANY_BLOCK = 0;
     MSC_NFT_BLOCK = 0;
+    MSC_PROPERTY_CREATION_RULES_BLOCK = std::numeric_limits<int>::max();
     // Other feature activations:
     GRANTEFFECTS_FEATURE_BLOCK = 999999;
     DEXMATH_FEATURE_BLOCK = 999999;
@@ -772,6 +778,12 @@ bool VerifyTransactionExistence(int block)
     }
 
     return true;
+}
+
+bool IsPropertyCreationRuleActive(int block)
+{
+    const CConsensusParams& params = ConsensusParams();
+    return (block >= params.MSC_PROPERTY_CREATION_RULES_BLOCK);
 }
 
 } // namespace mastercore

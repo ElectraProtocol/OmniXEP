@@ -43,6 +43,8 @@
 #include <vector>
 #include <tuple>
 
+#include <script/standard.h>
+
 using boost::algorithm::token_compress_on;
 
 using namespace mastercore;
@@ -1089,6 +1091,35 @@ bool CMPTransaction::interpret_Alert()
     return true;
 }
 
+static bool CheckContractCreationBurn(const uint256& txid)
+{
+    CTransactionRef tx;
+    uint256 hashBlock;
+
+    if (!GetTransaction(txid, tx, Params().GetConsensus(), hashBlock)) {
+        PrintToLog("%s(): ERROR: failed to fetch tx %s while checking contract creation burn\n",
+                __func__, txid.GetHex());
+        return false;
+    }
+
+    CTxDestination burnDest = DecodeDestination(OMNI_CONTRACT_BURN_ADDRESS);
+    if (!IsValidDestination(burnDest)) {
+        PrintToLog("%s(): ERROR: burn address %s is invalid\n",
+                __func__, OMNI_CONTRACT_BURN_ADDRESS);
+        return false;
+    }
+
+    CScript burnScript = GetScriptForDestination(burnDest);
+
+    for (const CTxOut& out : tx->vout) {
+        if (out.scriptPubKey == burnScript && out.nValue >= OMNI_CONTRACT_CREATION_FEE) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // ---------------------- CORE LOGIC -------------------------
 
 /**
@@ -2112,6 +2143,17 @@ int CMPTransaction::logicMath_CreatePropertyFixed(CBlockIndex* pindex)
         PrintToLog("%s(): rejected: property name must not be empty\n", __func__);
         return (PKT_ERROR_SP -37);
     }
+    
+    if (IsPropertyCreationRuleActive(block)) {
+        if (!CheckContractCreationBurn(txid)) {
+            PrintToLog("%s(): rejected: fixed property creation requires a burn of %s XEP to %s (block %d)\n",
+                    __func__,
+                    FormatMoney(OMNI_CONTRACT_CREATION_FEE),
+                    OMNI_CONTRACT_BURN_ADDRESS,
+                    block);
+            return (PKT_ERROR_SP -60);
+        }
+    }
 
     // ------------------------------------------
 
@@ -2204,6 +2246,17 @@ int CMPTransaction::logicMath_CreatePropertyVariable(CBlockIndex* pindex)
     if (nullptr != getCrowd(sender)) {
         PrintToLog("%s(): rejected: sender %s has an active crowdsale\n", __func__, sender);
         return (PKT_ERROR_SP -39);
+    }
+
+    if (IsPropertyCreationRuleActive(block)) {
+        if (!CheckContractCreationBurn(txid)) {
+            PrintToLog("%s(): rejected: crowdsale property creation requires a burn of %s XEP to %s (block %d)\n",
+                    __func__,
+                    FormatMoney(OMNI_CONTRACT_CREATION_FEE),
+                    OMNI_CONTRACT_BURN_ADDRESS,
+                    block);
+            return (PKT_ERROR_SP -61);
+        }
     }
 
     // ------------------------------------------
@@ -2339,6 +2392,17 @@ int CMPTransaction::logicMath_CreatePropertyManaged(CBlockIndex* pindex)
     if ('\0' == name[0]) {
         PrintToLog("%s(): rejected: property name must not be empty\n", __func__);
         return (PKT_ERROR_SP -37);
+    }
+
+    if (IsPropertyCreationRuleActive(block)) {
+        if (!CheckContractCreationBurn(txid)) {
+            PrintToLog("%s(): rejected: managed property creation requires a burn of %s XEP to %s (block %d)\n",
+                    __func__,
+                    FormatMoney(OMNI_CONTRACT_CREATION_FEE),
+                    OMNI_CONTRACT_BURN_ADDRESS,
+                    block);
+            return (PKT_ERROR_SP -60);
+        }
     }
 
     // ------------------------------------------

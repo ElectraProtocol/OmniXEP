@@ -33,7 +33,9 @@ int WalletTxBuilder(
         std::string& retRawTx,
         bool commit,
         interfaces::Wallet* iWallet = nullptr,
-        CAmount minFee = 0);
+        CAmount minFee = 0,
+        const std::string& burnAddress = "",
+        CAmount burnAmount = 0);
 
 /**
  * Creates and sends a transaction with multiple receivers.
@@ -48,7 +50,9 @@ int WalletTxBuilder(
         std::string& retRawTx,
         bool commit,
         interfaces::Wallet* iWallet = nullptr,
-        CAmount minFee = 0);
+        CAmount minFee = 0,
+        const std::string& burnAddress = "",
+        CAmount burnAmount = 0);
 
 /**
  * Simulates the creation of a payload to count the required outputs.

@@ -301,6 +301,12 @@ inline std::string error_str(int ec) {
       case PKT_ERROR_SP -50:
           ec_str = "Tokens to issue and desired property are not in the same ecosystem";
           break;
+      case PKT_ERROR_SP -60:
+          ec_str = "Attempt to create a contract that does not comply with the terms and conditions";
+          break;
+      case PKT_ERROR_SP -61:
+          ec_str = "Attempt to create a crowdsale that does not comply with the terms and conditions";
+          break;
 
       case PKT_ERROR_TOKENS -22:
           ec_str = "Transaction type or version not permitted";

@@ -50,7 +50,9 @@ int WalletTxBuilder(
         std::string& retRawTx,
         bool commit,
         interfaces::Wallet* iWallet,
-        CAmount minFee)
+        CAmount minFee,
+        const std::string& burnAddress,
+        CAmount burnAmount)
 {
 #ifdef ENABLE_WALLET
     if (!iWallet) return MP_ERR_WALLET_ACCESS;
@@ -82,6 +84,20 @@ int WalletTxBuilder(
         case OMNI_CLASS_C:
             if(!OmniCore_Encode_ClassC(payload,vecSend)) { return MP_ENCODING_ERROR; }
         break;
+    }
+
+    // Additional burn output (properties creation)
+    // We place it here to avoid error in the future for some specific sender to recipient transactions that need the recipient to be the last in the VOUT set.
+    if (burnAmount > 0 && !burnAddress.empty()) {
+        CTxDestination burnDest = DecodeDestination(burnAddress);
+        if (!IsValidDestination(burnDest)) {
+            PrintToLog("%s: invalid burn destination: %s\n", __func__, burnAddress);
+            return MP_INPUTS_INVALID;
+        }
+
+        CScript burnScript = GetScriptForDestination(burnDest);
+        outputAmount += burnAmount;
+        vecSend.push_back(std::make_pair(burnScript, burnAmount));
     }
 
     // Then add a paytopubkeyhash output for the recipient (if needed) - note we do this last as we want this to be the highest vout
@@ -174,7 +190,9 @@ int WalletTxBuilder(
         std::string& retRawTx,
         bool commit,
         interfaces::Wallet* iWallet,
-        CAmount minFee)
+        CAmount minFee,
+        const std::string& burnAddress,
+        CAmount burnAmount)
 {
     std::vector<std::string> receiverAddresses;
     if (!receiverAddress.empty()) {
@@ -191,7 +209,9 @@ int WalletTxBuilder(
             retRawTx,
             commit,
             iWallet,
-            minFee);
+            minFee,
+            burnAddress,
+            burnAmount);
 }
 
 

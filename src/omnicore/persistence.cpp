@@ -74,7 +74,7 @@ static bool is_state_prefix(std::string const &str)
 }
 
 // snapshots var
-static const int MAX_REORG_DEPTH = 10000;
+static const int MAX_REORG_DEPTH = 5000;
 static const int SNAPSHOT_SPACING_BLOCKS = 1000;
 
 int64_t GetLastStateSnapshotHeight()
