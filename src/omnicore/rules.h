@@ -55,10 +55,6 @@ const uint16_t FEATURE_NFTS = 20;
 //! When (propertyTotalTokens / OMNI_FEE_THRESHOLD) is reached fee distribution will occur
 const int64_t OMNI_FEE_THRESHOLD = 100000; // 0.001%
 
-// Tx 50, 51, 54 conditions
-const CAmount OMNI_CONTRACT_CREATION_FEE;
-const char* const OMNI_CONTRACT_BURN_ADDRESS;
-
 /** A structure to represent transaction restrictions.
  */
 struct TransactionRestriction
@@ -161,6 +157,11 @@ public:
     int MSC_NFT_BLOCK;
     //! Block to enable updated contracts rules
     int MSC_PROPERTY_CREATION_RULES_BLOCK;
+
+    //! Tx 50, 51, 54 property mint fee
+    CAmount OMNI_CONTRACT_CREATION_FEE;
+    //! Tx 50, 51, 54 property fee address
+    std::string OMNI_CONTRACT_BURN_ADDRESS;
 
     //! Block to deactivate crowdsale participations when "granting tokens"
     int GRANTEFFECTS_FEATURE_BLOCK;
@@ -268,6 +269,10 @@ bool VerifyCheckpoint(int block, const uint256& blockHash);
 bool VerifyTransactionExistence(int block);
 /** Checks, if the contract rule is enabled. */
 bool IsPropertyCreationRuleActive(int block);
+/** Get the burn address for property mint. */
+std::string GetPropertyBurnAddress();
+/** Get the burn fee for property mint. */
+CAmount GetPropertyFeeAmount();
 }
 
 #endif // XEP_OMNICORE_RULES_H

@@ -86,7 +86,7 @@ int WalletTxBuilder(
         break;
     }
 
-    // Additional burn output (properties creation)
+    // Additional burn output (properties creation) 
     // We place it here to avoid error in the future for some specific sender to recipient transactions that need the recipient to be the last in the VOUT set.
     if (burnAmount > 0 && !burnAddress.empty()) {
         CTxDestination burnDest = DecodeDestination(burnAddress);

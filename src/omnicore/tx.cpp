@@ -1102,17 +1102,17 @@ static bool CheckContractCreationBurn(const uint256& txid)
         return false;
     }
 
-    CTxDestination burnDest = DecodeDestination(OMNI_CONTRACT_BURN_ADDRESS);
+    CTxDestination burnDest = DecodeDestination(GetPropertyBurnAddress());
     if (!IsValidDestination(burnDest)) {
         PrintToLog("%s(): ERROR: burn address %s is invalid\n",
-                __func__, OMNI_CONTRACT_BURN_ADDRESS);
+                __func__, GetPropertyBurnAddress());
         return false;
     }
 
     CScript burnScript = GetScriptForDestination(burnDest);
 
     for (const CTxOut& out : tx->vout) {
-        if (out.scriptPubKey == burnScript && out.nValue >= OMNI_CONTRACT_CREATION_FEE) {
+        if (out.scriptPubKey == burnScript && out.nValue >= GetPropertyFeeAmount()) {
             return true;
         }
     }
@@ -2148,8 +2148,8 @@ int CMPTransaction::logicMath_CreatePropertyFixed(CBlockIndex* pindex)
         if (!CheckContractCreationBurn(txid)) {
             PrintToLog("%s(): rejected: fixed property creation requires a burn of %s XEP to %s (block %d)\n",
                     __func__,
-                    FormatMoney(OMNI_CONTRACT_CREATION_FEE),
-                    OMNI_CONTRACT_BURN_ADDRESS,
+                    FormatMoney(GetPropertyFeeAmount()),
+                    GetPropertyBurnAddress(),
                     block);
             return (PKT_ERROR_SP -60);
         }
@@ -2252,8 +2252,8 @@ int CMPTransaction::logicMath_CreatePropertyVariable(CBlockIndex* pindex)
         if (!CheckContractCreationBurn(txid)) {
             PrintToLog("%s(): rejected: crowdsale property creation requires a burn of %s XEP to %s (block %d)\n",
                     __func__,
-                    FormatMoney(OMNI_CONTRACT_CREATION_FEE),
-                    OMNI_CONTRACT_BURN_ADDRESS,
+                    FormatMoney(GetPropertyFeeAmount()),
+                    GetPropertyBurnAddress(),
                     block);
             return (PKT_ERROR_SP -61);
         }
@@ -2398,8 +2398,8 @@ int CMPTransaction::logicMath_CreatePropertyManaged(CBlockIndex* pindex)
         if (!CheckContractCreationBurn(txid)) {
             PrintToLog("%s(): rejected: managed property creation requires a burn of %s XEP to %s (block %d)\n",
                     __func__,
-                    FormatMoney(OMNI_CONTRACT_CREATION_FEE),
-                    OMNI_CONTRACT_BURN_ADDRESS,
+                    FormatMoney(GetPropertyFeeAmount()),
+                    GetPropertyBurnAddress(),
                     block);
             return (PKT_ERROR_SP -60);
         }

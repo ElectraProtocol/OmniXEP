@@ -16,6 +16,7 @@
 #include <omnicore/sp.h>
 #include <omnicore/tx.h>
 #include <omnicore/utilsxep.h>
+#include <validation.h>
 #include <omnicore/wallettxbuilder.h>
 
 #include <interfaces/wallet.h>
@@ -1153,11 +1154,28 @@ static UniValue omni_sendissuancecrowdsale(const JSONRPCRequest& request)
         wallet->BlockUntilSyncedToCurrentChain();
     }
 
+    int chainHeight;
+    {
+        LOCK(cs_main);
+        chainHeight = ::ChainActive().Height();
+    }
+
+    bool burnRequired = IsPropertyCreationRuleActive(chainHeight);
+
+    std::string burnAddress;
+    CAmount burnAmount = 0;
+
+    // Fill in only if the feature is enabled
+    if (burnRequired) {
+        burnAddress = GetPropertyBurnAddress();
+        burnAmount = GetPropertyFeeAmount();
+    }
+
     // request the wallet build the transaction (and if needed commit it)
     uint256 txid;
     std::string rawHex;
     int result = WalletTxBuilder(fromAddress, "", "", 0, payload, txid, rawHex, autoCommit, pwallet.get(),
-                                 0, OMNI_CONTRACT_BURN_ADDRESS, OMNI_CONTRACT_CREATION_FEE);
+                                 0, burnAddress, burnAmount);
 
     // check error and return the txid (or raw hex depending on autocommit)
     if (result != 0) {
@@ -1221,11 +1239,28 @@ static UniValue omni_sendissuancefixed(const JSONRPCRequest& request)
         wallet->BlockUntilSyncedToCurrentChain();
     }
 
+    int chainHeight;
+    {
+        LOCK(cs_main);
+        chainHeight = ::ChainActive().Height();
+    }
+
+    bool burnRequired = IsPropertyCreationRuleActive(chainHeight);
+
+    std::string burnAddress;
+    CAmount burnAmount = 0;
+
+    // Fill in only if the feature is enabled
+    if (burnRequired) {
+        burnAddress = GetPropertyBurnAddress();
+        burnAmount = GetPropertyFeeAmount();
+    }
+
     // request the wallet build the transaction (and if needed commit it)
     uint256 txid;
     std::string rawHex;
     int result = WalletTxBuilder(fromAddress, "", "", 0, payload, txid, rawHex, autoCommit, pwallet.get(),
-                                 0, OMNI_CONTRACT_BURN_ADDRESS, OMNI_CONTRACT_CREATION_FEE);
+                                 0, burnAddress, burnAmount);
 
     // check error and return the txid (or raw hex depending on autocommit)
     if (result != 0) {
@@ -1291,11 +1326,28 @@ static UniValue omni_sendissuancemanaged(const JSONRPCRequest& request)
         wallet->BlockUntilSyncedToCurrentChain();
     }
 
+    int chainHeight;
+    {
+        LOCK(cs_main);
+        chainHeight = ::ChainActive().Height();
+    }
+
+    bool burnRequired = IsPropertyCreationRuleActive(chainHeight);
+
+    std::string burnAddress;
+    CAmount burnAmount = 0;
+
+    // Fill in only if the feature is enabled
+    if (burnRequired) {
+        burnAddress = GetPropertyBurnAddress();
+        burnAmount = GetPropertyFeeAmount();
+    }
+
     // request the wallet build the transaction (and if needed commit it)
     uint256 txid;
     std::string rawHex;
     int result = WalletTxBuilder(fromAddress, "", "", 0, payload, txid, rawHex, autoCommit, pwallet.get(),
-                                 0, OMNI_CONTRACT_BURN_ADDRESS, OMNI_CONTRACT_CREATION_FEE);
+                                 0, burnAddress, burnAmount);
 
     // check error and return the txid (or raw hex depending on autocommit)
     if (result != 0) {
