@@ -1701,6 +1701,8 @@ void RewindDBsAndState(int nHeight, int nBlockPrev = 0, bool fInitialParse = fal
         pDbStoList->deleteAboveBlock(nHeight);
         pDbFeeCache->RollBackCache(nHeight);
         pDbFeeHistory->RollBackHistory(nHeight);
+        // First trim NFT state back to the live reorg boundary. If snapshot restore
+        // later chooses an older replay waterline, we roll back further below.
         pDbNFT->RollBackAboveBlock(nHeight);
         reorgRecoveryMaxHeight = 0;
 
@@ -1717,6 +1719,9 @@ void RewindDBsAndState(int nHeight, int nBlockPrev = 0, bool fInitialParse = fal
             clear_all_state();
         } else {
             LOCK(cs_tally);
+            // The restored snapshot may predate the first disconnected block, so
+            // align the NFT DB to the same replay waterline before rescanning.
+            pDbNFT->RollBackAboveBlock(best_state_block + 1);
             nWaterlineBlock = best_state_block;
         }
     }
