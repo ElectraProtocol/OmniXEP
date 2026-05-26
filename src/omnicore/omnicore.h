@@ -29,9 +29,9 @@ class Coin;
 int const STORE_EVERY_N_BLOCK = 100;
 // Store the state every 10000 blocks during initial block download
 int const STORE_EVERY_N_BLOCK_IDB = 10000;
-// Don't store the state every block on mainnet until block 2000000
+// Don't store the state every block on mainnet until block 2130000
 // was reached, can be set with -omniskipstoringstate.
-int const DONT_STORE_MAINNET_STATE_UNTIL = 2000000;
+int const DONT_STORE_MAINNET_STATE_UNTIL = 2130000;
 
 #define TEST_ECO_PROPERTY_1 (0x80000003UL)
 
